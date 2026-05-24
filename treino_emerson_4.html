@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MFIT · Emerson</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script>
+// Funções críticas declaradas antes do body renderizar
+function showSection(id){
+  document.querySelectorAll('.section-page').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.nav-tab').forEach(function(el){el.classList.remove('active');});
+  var sec=document.getElementById('section-'+id);
+  if(sec) sec.classList.add('active');
+  var tabs=document.querySelectorAll('.nav-tab');
+  if(id==='treinos' && tabs[0]) tabs[0].classList.add('active');
+  if(id==='bio' && tabs[1]) tabs[1].classList.add('active');
+  try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){}
+}
+function toggleT(h){h.closest('.train-card').classList.toggle('open');}
+function toggleEx(el){el.classList.toggle('done');}
+function selectMonth(n){
+  var curM=n;
+  document.querySelectorAll('.month-content').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.month-btn').forEach(function(el){el.classList.remove('active');});
+  var mc=document.getElementById('month-'+n);
+  if(mc) mc.classList.add('active');
+  document.querySelectorAll('.month-btn')[n-1].classList.add('active');
+}
+function calNav(dir){if(window._calNav)window._calNav(dir);}
+function toggleCalDay(ds){if(window._toggleCalDay)window._toggleCalDay(ds);}
+function addWeight(){if(window._addWeight)window._addWeight();}
+function delWeight(i){if(window._delWeight)window._delWeight(i);}
+function saveNote(tid){if(window._saveNote)window._saveNote(tid);}
+function markDone(e,id){if(window._markDone)window._markDone(e,id);}
+function setPreset(s,btn){if(window._setPreset)window._setPreset(s,btn);}
+function toggleTimer(){if(window._toggleTimer)window._toggleTimer();}
+function resetTimer(){if(window._resetTimer)window._resetTimer();}
+</script>
+<style>
+:root{
+  --bg:#080808;--surface:#111;--surface2:#181818;--surface3:#202020;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
+  --accent:#FF4D00;--accent2:#FF7A3D;--accent-dim:rgba(255,77,0,0.12);
+  --green:#00D97E;--green-dim:rgba(0,217,126,0.12);
+  --blue:#3D8EFF;--blue-dim:rgba(61,142,255,0.12);
+  --purple:#A855F7;--purple-dim:rgba(168,85,247,0.12);
+  --yellow:#FFB800;--yellow-dim:rgba(255,184,0,0.12);
+  --text:#F2F2F2;--text2:#999;--text3:#555;
+  --mono:'Space Mono',monospace;--display:'Syne',sans-serif;--body:'Inter',sans-serif;
+  --r:14px;--rs:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.5;}
+.orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;}
+.orb-1{width:600px;height:600px;background:rgba(255,77,0,0.07);top:-200px;right:-200px;z-index:-1;}
+.orb-2{width:400px;height:400px;background:rgba(61,142,255,0.05);bottom:100px;left:-100px;z-index:-1;}
+.app{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:0 16px 80px;}
+
+/* HEADER */
+.header{padding:48px 0 32px;}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+.logo{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(255,77,0,0.2);padding:6px 14px;border-radius:100px;}
+.header-date{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;}
+.title{font-family:var(--display);font-size:clamp(52px,14vw,96px);font-weight:800;line-height:.92;letter-spacing:-2px;color:#fff;margin-bottom:6px;}
+.title .acc{color:var(--accent);}
+.sub{font-size:13px;color:var(--text2);margin-top:14px;font-weight:300;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:24px 0;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 14px;position:relative;overflow:hidden;transition:border-color .2s,transform .2s;}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);transform:scaleX(0);transition:transform .3s;transform-origin:left;}
+.stat-card:hover::after{transform:scaleX(1);}
+.stat-val{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent);line-height:1;margin-bottom:4px;}
+.stat-label{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);}
+
+/* PROGRESS */
+.progress-strip{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:20px;}
+.ps-title{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:14px;}
+.prog-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.prog-row:last-child{margin-bottom:0;}
+.prog-lbl{font-size:11px;color:var(--text2);min-width:130px;flex-shrink:0;}
+.prog-track{flex:1;height:4px;background:var(--surface3);border-radius:100px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:100px;transition:width 1.2s cubic-bezier(.16,1,.3,1);}
+.prog-fill.o{background:var(--accent);}
+.prog-fill.g{background:var(--green);}
+.prog-fill.b{background:var(--blue);}
+.prog-val{font-family:var(--mono);font-size:10px;color:var(--text3);min-width:90px;text-align:right;flex-shrink:0;}
+
+/* TIMER */
+.timer-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:20px;text-align:center;}
+.timer-lbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;}
+.timer-disp{font-family:var(--mono);font-size:48px;font-weight:700;color:var(--accent);letter-spacing:-2px;line-height:1;margin-bottom:14px;transition:color .3s;}
+.timer-disp.run{color:var(--green);}
+.timer-disp.warn{color:var(--yellow);}
+.presets{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;}
+.preset-btn{font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 12px;border-radius:100px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;}
+.preset-btn:hover,.preset-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+.ctrl-row{display:flex;gap:8px;justify-content:center;}
+.ctrl-btn{font-family:var(--mono);font-size:11px;font-weight:700;padding:9px 20px;border-radius:100px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;letter-spacing:1px;text-transform:uppercase;}
+.ctrl-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.ctrl-btn.primary:hover{background:var(--accent2);}
+.ctrl-btn:hover:not(.primary){background:var(--surface3);}
+
+/* MONTH NAV */
+.month-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;}
+.month-btn{background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px 8px;text-align:center;cursor:pointer;transition:all .2s;user-select:none;}
+.month-btn:hover{border-color:var(--border2);}
+.month-btn.active{background:var(--accent);border-color:var(--accent);}
+.mb-num{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text2);line-height:1;transition:color .2s;}
+.month-btn.active .mb-num{color:#fff;}
+.mb-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-top:3px;transition:color .2s;}
+.month-btn.active .mb-lbl{color:rgba(255,255,255,.7);}
+.week-status{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:0 2px;}
+.ws-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);}
+.done-badge{font-family:var(--mono);font-size:10px;color:var(--green);background:var(--green-dim);border:1px solid rgba(0,217,126,.2);padding:3px 10px;border-radius:100px;}
+
+/* MONTH CONTENT */
+.month-content{display:none;}
+.month-content.active{display:block;animation:fadeSlide .25s ease;}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* TRAIN CARD */
+.train-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;transition:border-color .2s;}
+.train-card.completed{border-color:rgba(0,217,126,.2);background:linear-gradient(135deg,var(--surface) 0%,rgba(0,217,126,.03) 100%);}
+.train-card.completed .t-num{color:var(--green);}
+.train-card.cardio-day{border-color:rgba(255,77,0,.15);background:linear-gradient(135deg,var(--surface) 0%,rgba(255,77,0,.03) 100%);}
+.train-card.rest-day{border-color:rgba(255,255,255,.04);}
+
+.t-header{display:flex;align-items:center;gap:14px;padding:16px 18px;cursor:pointer;user-select:none;position:relative;}
+.t-header::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:0;transition:opacity .2s;}
+.train-card.open .t-header::before{opacity:1;}
+.t-num{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text3);min-width:44px;line-height:1;transition:color .2s;}
+.t-info{flex:1;}
+.t-name{font-family:var(--display);font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.3px;}
+.t-focus{font-size:11px;color:var(--text3);margin-top:2px;}
+.t-actions{display:flex;align-items:center;gap:8px;}
+.t-tag{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:100px;}
+.tag-m{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(61,142,255,.2);}
+.tag-c{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(255,77,0,.2);}
+.tag-r{background:rgba(255,255,255,.04);color:var(--text3);border:1px solid var(--border);}
+.check-btn{width:28px;height:28px;border-radius:50%;border:2px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;color:var(--text3);font-size:12px;flex-shrink:0;}
+.check-btn:hover{border-color:var(--green);color:var(--green);}
+.check-btn.checked{background:var(--green);border-color:var(--green);color:#000;}
+.chevron{color:var(--text3);font-size:14px;transition:transform .25s;flex-shrink:0;}
+.train-card.open .chevron{transform:rotate(180deg);}
+
+/* BODY */
+.t-body{display:none;padding:0 18px 18px;border-top:1px solid var(--border);}
+.train-card.open .t-body{display:block;animation:fadeSlide .2s ease;}
+.sec-title{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin:16px 0 8px;display:flex;align-items:center;gap:8px;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.method-note{background:var(--yellow-dim);border:1px solid rgba(255,184,0,.15);border-radius:var(--rs);padding:10px 14px;font-size:11px;color:var(--yellow);margin:12px 0 8px;}
+.ex-list{display:flex;flex-direction:column;gap:5px;}
+.ex{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;transition:border-color .15s,background .15s;}
+.ex:hover{border-color:var(--border2);background:var(--surface3);}
+.ex.done{background:rgba(0,217,126,.04);border-color:rgba(0,217,126,.15);}
+.ex.done .ex-name{text-decoration:line-through;color:var(--text3);}
+.ex-ck{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .15s;color:transparent;}
+.ex.done .ex-ck{background:var(--green);border-color:var(--green);color:#000;}
+.ex-info{flex:1;}
+.ex-name{font-size:12px;font-weight:500;color:var(--text);line-height:1.35;transition:color .15s;}
+.ex-detail{font-size:10px;color:var(--text3);margin-top:2px;line-height:1.4;}
+.ex-badge{font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 8px;border-radius:100px;white-space:nowrap;flex-shrink:0;margin-top:1px;background:var(--accent-dim);color:var(--accent2);border:1px solid rgba(255,77,0,.15);}
+.ex-badge.b{background:var(--blue-dim);color:var(--blue);border-color:rgba(61,142,255,.15);}
+.ex-badge.g{background:var(--green-dim);color:var(--green);border-color:rgba(0,217,126,.15);}
+.ex-badge.p{background:var(--purple-dim);color:var(--purple);border-color:rgba(168,85,247,.15);}
+.rest-txt{padding:16px 0 4px;color:var(--text3);font-size:13px;line-height:1.7;}
+.rest-txt strong{color:var(--text);}
+
+/* TIPS */
+.tips{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-top:24px;}
+.tips-title{font-family:var(--display);font-size:22px;font-weight:800;color:var(--accent);margin-bottom:16px;letter-spacing:-.5px;}
+.tip{display:flex;gap:12px;margin-bottom:12px;font-size:13px;line-height:1.6;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.tip:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}
+.tip-i{font-size:16px;min-width:22px;}
+.tip-t{color:var(--text2);}
+.tip-t strong{color:var(--text);}
+footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;}
+/* ── NAV BAR ── */
+.top-nav{position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(8,8,8,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 16px;}
+.top-nav-inner{max-width:780px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:52px;}
+.nav-logo{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent);}
+.nav-tabs{display:flex;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:100px;padding:4px;position:relative;z-index:9999;}
+.nav-tab{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:8px 16px;border-radius:100px;cursor:pointer;color:var(--text3);transition:all .2s;user-select:none;border:none;background:transparent;position:relative;z-index:9999;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.nav-tab.active{background:var(--accent);color:#fff;}
+.nav-week{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;}
+.nav-week span{color:var(--accent);}
+.app{padding-top:68px;}
+
+/* ── SECTIONS ── */
+.section-page{display:none;}
+.section-page.active{display:block;}
+
+/* ── SCROLL ANIMATIONS ── */
+.fade-in{opacity:0;transform:translateY(18px);transition:opacity .5s ease,transform .5s ease;}
+.fade-in.visible{opacity:1;transform:translateY(0);}
+
+/* ── SEMANA COUNTER ── */
+.week-counter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:12px;display:flex;align-items:center;gap:16px;}
+.wc-icon{font-size:28px;}
+.wc-info{flex:1;}
+.wc-title{font-family:var(--display);font-size:15px;font-weight:700;color:var(--text);}
+.wc-sub{font-size:12px;color:var(--text2);margin-top:2px;}
+.wc-badge{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(255,77,0,.2);padding:8px 16px;border-radius:var(--rs);}
+
+/* ── CALENDAR ── */
+.calendar-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:12px;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.cal-title{font-family:var(--display);font-size:15px;font-weight:700;color:var(--text);}
+.cal-nav{display:flex;gap:6px;}
+.cal-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:28px;height:28px;cursor:pointer;color:var(--text2);font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.cal-btn:hover{border-color:var(--accent);color:var(--accent);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-day-name{text-align:center;font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;padding:4px 0;}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:6px;font-family:var(--mono);font-size:11px;color:var(--text3);cursor:pointer;transition:all .15s;background:transparent;}
+.cal-day:hover{background:var(--surface2);}
+.cal-day.today{color:var(--text);font-weight:700;border:1px solid var(--border2);}
+.cal-day.trained{background:var(--accent);color:#fff;}
+.cal-day.trained:hover{background:var(--accent2);}
+.cal-day.other-month{opacity:.25;}
+.cal-day.empty{cursor:default;}
+.cal-streak{margin-top:12px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);}
+.cal-streak span{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--orange);}
+
+/* ── NOTAS POR TREINO ── */
+.notes-panel{border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:none;}
+.train-card.open .notes-panel{display:block;}
+.notes-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
+.notes-textarea{width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-family:var(--body);font-size:12px;padding:10px 12px;resize:none;min-height:70px;outline:none;transition:border-color .15s;line-height:1.5;}
+.notes-textarea:focus{border-color:var(--accent);}
+.notes-textarea::placeholder{color:var(--text3);}
+.notes-footer{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+.notes-save-btn{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:5px 12px;border-radius:100px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;transition:all .15s;}
+.notes-save-btn:hover{background:var(--accent);color:#fff;}
+.notes-saved{font-size:10px;color:var(--green);opacity:0;transition:opacity .3s;}
+.notes-saved.show{opacity:1;}
+
+/* ── PROGRESSO DE PESO ── */
+.weight-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:12px;}
+.weight-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.weight-title{font-family:var(--display);font-size:15px;font-weight:700;color:var(--text);}
+.weight-current{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--orange);}
+.weight-current span{font-size:12px;color:var(--text3);font-weight:400;}
+.weight-input-row{display:flex;gap:8px;margin-bottom:16px;}
+.weight-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-family:var(--mono);font-size:14px;padding:10px 14px;outline:none;transition:border-color .15s;}
+.weight-input:focus{border-color:var(--accent);}
+.weight-add-btn{font-family:var(--mono);font-size:10px;font-weight:700;padding:10px 16px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;cursor:pointer;transition:background .15s;white-space:nowrap;}
+.weight-add-btn:hover{background:var(--accent2);}
+.weight-chart{position:relative;height:120px;margin-bottom:8px;}
+.wc-canvas{width:100%;height:100%;}
+.weight-entries{display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto;}
+.we-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:6px 10px;background:var(--surface2);border-radius:6px;}
+.we-date{color:var(--text3);font-family:var(--mono);}
+.we-val{color:var(--text);font-weight:600;font-family:var(--mono);}
+.we-delta{font-size:10px;}
+.we-delta.pos{color:var(--orange);}
+.we-delta.neg{color:var(--green);}
+.we-del{color:var(--text3);cursor:pointer;font-size:12px;padding:0 4px;}
+.we-del:hover{color:var(--orange);}
+.weight-empty{font-size:12px;color:var(--text3);text-align:center;padding:20px;}
+.bio-section{margin-top:40px;}
+.bio-header{padding:40px 0 28px;}
+.bio-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;}
+.bio-title{font-family:var(--display);font-size:clamp(44px,10vw,76px);font-weight:800;line-height:.92;letter-spacing:-2px;color:#fff;margin-bottom:6px;}
+.bio-sub{font-size:13px;color:var(--text2);font-weight:300;margin-top:12px;}
+
+/* SCORE CARD */
+.score-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:12px;}
+.score-left{display:flex;align-items:baseline;gap:4px;margin-bottom:14px;}
+.score-num{font-family:var(--mono);font-size:52px;font-weight:700;color:var(--orange);line-height:1;}
+.score-denom{font-family:var(--mono);font-size:22px;color:var(--text3);margin-right:12px;}
+.score-label{font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;}
+.score-track{height:8px;background:var(--surface3);border-radius:100px;position:relative;overflow:visible;margin-bottom:6px;}
+.score-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--orange));border-radius:100px;transition:width 1.2s ease;}
+.score-marker{position:absolute;top:-4px;width:16px;height:16px;background:var(--orange);border:2px solid var(--bg);border-radius:50%;transform:translateX(-50%);transition:left 1.2s ease;}
+.score-range-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);font-family:var(--mono);}
+.score-note{font-size:10px;color:var(--text3);margin-top:10px;font-style:italic;}
+
+/* 4 STATS */
+.bio-stats-4{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+.bstat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;position:relative;overflow:hidden;}
+.bstat::before{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;}
+.bstat-warn::before{background:var(--orange);}
+.bstat-ok::before{background:var(--green);}
+.bstat-neutral::before{background:var(--blue);}
+.bstat-icon{font-size:20px;margin-bottom:8px;}
+.bstat-val{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--text);line-height:1;}
+.bstat-warn .bstat-val{color:var(--orange);}
+.bstat-ok .bstat-val{color:var(--green);}
+.bstat-neutral .bstat-val{color:var(--blue);}
+.bstat-val span{font-size:12px;font-weight:400;color:var(--text2);margin-left:2px;}
+.bstat-name{font-size:11px;color:var(--text2);margin-top:4px;}
+.bstat-ref{font-size:10px;color:var(--text3);margin-top:2px;}
+
+/* BIO CARDS */
+.bio-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:12px;}
+.bio-card-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;}
+.bio-card-title{font-family:var(--display);font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px;}
+.bio-card-sub{font-size:10px;color:var(--text3);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;}
+
+/* EVOLUÇÃO */
+.evo-grid{display:flex;flex-direction:column;gap:16px;}
+.evo-item{}
+.evo-label{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:4px;}
+.evo-vals{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.evo-before{font-size:13px;color:var(--text3);text-decoration:line-through;}
+.evo-arrow{color:var(--text3);font-size:12px;}
+.evo-after{font-size:16px;font-weight:600;color:var(--text);}
+.evo-bar-wrap{position:relative;height:6px;background:var(--surface3);border-radius:100px;margin-bottom:4px;overflow:hidden;}
+.evo-bar-fill{position:absolute;left:0;top:0;height:100%;background:rgba(255,77,0,.2);border-radius:100px;}
+.evo-bar-now{position:absolute;left:0;top:0;height:100%;background:var(--orange);border-radius:100px;transition:width 1.2s ease;}
+.evo-blue{background:rgba(61,142,255,.2);}
+.evo-blue-now{background:var(--blue);}
+.evo-delta{font-size:11px;font-weight:600;color:var(--green);}
+.evo-delta-blue{color:var(--blue);}
+
+/* PROGRESSO COMPLETO */
+.prog-list{display:flex;flex-direction:column;gap:14px;}
+.prog-item-full{}
+.prog-item-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.prog-item-name{font-size:12px;color:var(--text2);}
+.prog-item-nums{font-size:11px;color:var(--text3);font-family:var(--mono);}
+.prog-item-nums b{color:var(--text);}
+.prog-item-status{font-size:10px;margin-top:4px;}
+.prog-item-status.warn{color:var(--orange);}
+.prog-item-status.ok{color:var(--green);}
+
+/* COMPOSIÇÃO BARRAS */
+.comp-bars{display:flex;flex-direction:column;gap:14px;}
+.comp-bar-item{}
+.comp-bar-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:5px;}
+.comp-ok{color:var(--green);font-weight:600;}
+.comp-bad{color:var(--orange);font-weight:600;}
+.comp-track{height:10px;background:var(--surface3);border-radius:100px;overflow:hidden;margin-bottom:3px;}
+.comp-fill{height:100%;border-radius:100px;transition:width 1.2s ease;}
+.comp-agua{background:var(--blue);}
+.comp-prot{background:var(--green);}
+.comp-min{background:var(--purple);}
+.comp-gord{background:var(--orange);}
+.comp-ref{font-size:10px;color:var(--text3);}
+
+/* INDICADORES GRID */
+.indic-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.indic-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:14px;text-align:center;}
+.indic-bad{border-color:rgba(255,77,0,.2);background:rgba(255,77,0,.04);}
+.indic-name{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono);margin-bottom:6px;}
+.indic-val{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--orange);line-height:1;}
+.indic-unit{font-size:10px;color:var(--text3);margin-top:2px;}
+.indic-status{font-size:11px;color:var(--orange);margin-top:6px;font-weight:600;}
+.indic-ref{font-size:10px;color:var(--text3);margin-top:2px;}
+
+/* SEGMENTAR NOVO */
+.seg-body{display:flex;gap:16px;align-items:center;}
+.seg-figure{flex-shrink:0;opacity:.8;}
+.seg-left{flex:1;display:flex;flex-direction:column;gap:8px;}
+.seg-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:8px 12px;}
+.seg-tronco{border-color:rgba(255,77,0,.25);background:rgba(255,77,0,.05);}
+.seg-seg-name{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-family:var(--mono);margin-bottom:3px;}
+.seg-row-vals{display:flex;align-items:center;gap:6px;font-size:12px;}
+.seg-magra{color:var(--blue);font-weight:600;}
+.seg-divider{color:var(--text3);}
+.seg-fat-val{color:var(--orange);}
+.seg-fat-high{font-weight:700;}
+.seg-legend{display:flex;gap:12px;font-size:10px;margin-top:4px;padding:0 2px;}
+.leg-m{color:var(--blue);}
+.leg-f{color:var(--orange);}
+
+@media(max-width:480px){
+  .bio-stats-4{grid-template-columns:repeat(2,1fr);}
+  .indic-grid{grid-template-columns:repeat(2,1fr);}
+  .seg-body{flex-direction:column;}
+  .bio-card-header{flex-direction:column;gap:4px;}
+}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
+@media(max-width:480px){.stats-grid{grid-template-columns:repeat(2,1fr);}.title{font-size:52px;}.timer-disp{font-size:36px;}.prog-lbl{min-width:90px;}}
+
+
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <div class="top-nav-inner">
+    <div class="nav-logo">MFIT</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showSection('treinos')">💪 Treinos</button>
+      <button class="nav-tab" onclick="showSection('bio')">📊 Bioimpedância</button>
+    </div>
+    <div class="nav-week">Semana <span id="nav-week-num">—</span></div>
+  </div>
+</nav>
+
+<div class="app">
+
+<!-- ═══════════ SEÇÃO TREINOS ═══════════ -->
+<div class="section-page active" id="section-treinos">
+<header class="header">
+  <div class="header-top">
+    <div class="logo">MFIT · Personal</div>
+    <div class="header-date" id="today-date"></div>
+  </div>
+  <div class="eyebrow">Plano de treino personalizado</div>
+  <div class="title">TREINO<br><span class="acc">SEMANAL</span></div>
+  <div class="sub">Emerson Soares · 27 anos · 98,9kg · Foco em perda de gordura</div>
+</header>
+
+<div class="timer-wrap">
+  <div class="timer-lbl">⏱ Cronômetro de descanso</div>
+  <div class="timer-disp" id="td">01:00</div>
+  <div class="presets">
+    <button class="preset-btn active" onclick="setPreset(60,this)">1 min</button>
+    <button class="preset-btn" onclick="setPreset(90,this)">1:30</button>
+    <button class="preset-btn" onclick="setPreset(120,this)">2 min</button>
+    <button class="preset-btn" onclick="setPreset(180,this)">3 min</button>
+    <button class="preset-btn" onclick="setPreset(300,this)">5 min</button>
+  </div>
+  <div class="ctrl-row" style="margin-top:10px">
+    <button class="ctrl-btn primary" id="tt" onclick="toggleTimer()">▶ INICIAR</button>
+    <button class="ctrl-btn" onclick="resetTimer()">↺ RESET</button>
+  </div>
+</div>
+
+<div class="month-nav">
+  <div class="month-btn active" onclick="selectMonth(1)"><div class="mb-num">M1</div><div class="mb-lbl">Adaptação</div></div>
+  <div class="month-btn" onclick="selectMonth(2)"><div class="mb-num">M2</div><div class="mb-lbl">Progressão</div></div>
+  <div class="month-btn" onclick="selectMonth(3)"><div class="mb-num">M3</div><div class="mb-lbl">Intensidade</div></div>
+  <div class="month-btn" onclick="selectMonth(4)"><div class="mb-num">M4</div><div class="mb-lbl">Força</div></div>
+</div>
+<div class="week-status">
+  <div class="ws-label" id="ws-label">Treinos em andamento</div>
+  <div class="done-badge" id="done-badge">0 / 6 treinos</div>
+</div>
+<!-- MES 1 -->
+<div class="month-content active" id="month-1">
+
+<div class="train-card" data-tid="m1-t1">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T1</div>
+    <div class="t-info"><div class="t-name">Peitoral e Bíceps</div><div class="t-focus">Supino · Crucifixo · Roscas</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m1-t1')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="sec-title">Aquecimento</div>
+    <div class="ex-list"><div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Mobilidade Membros Superiores</div></div><div class="ex-badge b">5 min</div></div></div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Máquina (Pegada Neutra)</div></div><div class="ex-badge">4×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Inclinado com Halteres</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Crucifixo Máquina</div></div><div class="ex-badge">3×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Martelo com Halteres</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Direta Alternada Sentada</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Zottman</div><div class="ex-detail">Sobe supinado, desce pronado</div></div><div class="ex-badge">3×15</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m1-t2">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T2</div>
+    <div class="t-info"><div class="t-name">Costas e Tríceps</div><div class="t-focus">Puxadas · Remadas · Tríceps</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m1-t2')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="sec-title">Aquecimento</div>
+    <div class="ex-list"><div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Mobilidade Membros Superiores</div></div><div class="ex-badge b">5 min</div></div></div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Articulada Aberta</div></div><div class="ex-badge">4×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Máquina (Pegada Neutra)</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Aberta Barra Reta</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Neutra Triângulo</div></div><div class="ex-badge">3×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Francês Sentado com Halteres</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Testa com Halteres</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps na Polia Barra W</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps na Polia Barra Reta</div></div><div class="ex-badge">3×15</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m1-t3">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T3</div>
+    <div class="t-info"><div class="t-name">Pernas, Ombro e Trapézio</div><div class="t-focus">Agachamento · Elevações · Remada Alta</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m1-t3')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="sec-title">Aquecimento</div>
+    <div class="ex-list"><div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Mobilidade Membros Inferiores</div></div><div class="ex-badge b">5 min</div></div></div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Panturrilha Sentada Máquina</div></div><div class="ex-badge">3×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Agachamento Sumô no Step com Halteres</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Mesa Flexora</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Adução de Quadril Máquina</div></div><div class="ex-badge">3×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdução de Quadril Máquina</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Elevação Frontal na Polia Baixa</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Elevação Lateral Unilateral na Polia Baixa</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Alta na Polia Baixa com Barra Reta</div></div><div class="ex-badge">3×15</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m1-t4">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T4</div>
+    <div class="t-info"><div class="t-name">Peitoral e Bíceps (variação)</div><div class="t-focus">Crossover · Supino · Roscas Scott</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m1-t4')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Crossover Polia Baixa</div></div><div class="ex-badge">3×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Inclinado</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Reto</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Direta com Halteres</div></div><div class="ex-badge">3×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Direta na Polia Baixa com Corda</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Scott com Barra W</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Scott com Barra Reta</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Infra Paralelas (Pernas Estendidas)</div></div><div class="ex-badge">3×15</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m1-t5">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T5</div>
+    <div class="t-info"><div class="t-name">Costas e Tríceps (variação)</div><div class="t-focus">Puxada Fechada · Remada · Tríceps Máquina</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m1-t5')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Fechada Pronada Barra Reta</div></div><div class="ex-badge">3×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Baixa Supinada</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps na Polia com Corda</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps na Polia Barra Reta</div></div><div class="ex-badge">3×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Máquina</div></div><div class="ex-badge">3×15</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m1-t6">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T6</div>
+    <div class="t-info"><div class="t-name">Pernas — Força Total</div><div class="t-focus">Agachamento · Leg Press · Stiff · Extensora</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m1-t6')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Agachamento com Halter na Frente</div></div><div class="ex-badge">4×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Leg Press Horizontal</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Leg Press Vertical</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Cadeira Extensora</div></div><div class="ex-badge">3×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Stiff com Halteres</div></div><div class="ex-badge">3×15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Canivete</div></div><div class="ex-badge">3×15</div></div>
+    </div>
+  </div>
+</div>
+
+</div>
+<!-- MES 2 -->
+<div class="month-content" id="month-2">
+
+<div class="train-card" data-tid="m2-t1">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T1</div>
+    <div class="t-info"><div class="t-name">Pernas — Força na Peruca</div><div class="t-focus">Pirâmide · Agachamento · Terra · Quadril</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m2-t1')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">💡 Pirâmide crescente · Última série: 5+5+5+5+5 (10s entre blocos)</div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Mobilidade Membros Inferiores</div></div><div class="ex-badge b">5 min</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Agachamento Livre</div><div class="ex-detail">Aquecimento</div></div><div class="ex-badge">1×20</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Agachamento Smith</div><div class="ex-detail">15-20 / 12-15 / 10-12 / 8-10 / cluster 5+5+5+5+5</div></div><div class="ex-badge">5× pirâmide</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Levantamento Terra</div><div class="ex-detail">Pirâmide + cluster final</div></div><div class="ex-badge">5× pirâmide</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Elevação de Quadril na Máquina</div><div class="ex-detail">Pirâmide + cluster final</div></div><div class="ex-badge">5× pirâmide</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Panturrilha Sentada Máquina</div><div class="ex-detail">Pirâmide + cluster final</div></div><div class="ex-badge">5× pirâmide</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m2-t2">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T2</div>
+    <div class="t-info"><div class="t-name">Superiores — Força na Peruca</div><div class="t-focus">Supino · Remada · Crossover · Pirâmide</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m2-t2')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">💡 Progressão de carga · Última série: cluster 5+5+5+5+5</div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Mobilidade Membros Superiores</div></div><div class="ex-badge b">5 min</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Banco Supino Reto</div><div class="ex-detail">Pirâmide + cluster 5+5+5+5+5</div></div><div class="ex-badge">5× pirâmide</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Cavalinho (Pegada Neutra)</div></div><div class="ex-badge">5× pirâmide</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Crossover Polia Alta</div></div><div class="ex-badge">5× pirâmide</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Unilateral na Polia Baixa</div></div><div class="ex-badge">5× pirâmide</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m2-t3">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T3</div>
+    <div class="t-info"><div class="t-name">Pernas Delicinhas</div><div class="t-focus">Hack · Leg Press · Afundo · Stiff — até a falha</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m2-t3')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">💡 Método: 2× 12-15 reps + 1 série até a falha (MAX)</div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Panturrilha Hack</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Agachamento Hack</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Leg Press 45°</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Cadeira Extensora Unilateral</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Afundo no Smith</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Stiff Pés Próximos com Barra</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Oblíquo TABATA</div><div class="ex-detail">20s ON / 10s OFF × 8</div></div><div class="ex-badge b">Tabata</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m2-t4">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T4</div>
+    <div class="t-info"><div class="t-name">Costas Largas e Tríceps Grande</div><div class="t-focus">Puxadas · Remadas · Tríceps até a falha</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m2-t4')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">💡 2× 12-15 reps + 1 série até a falha (MAX)</div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Aberta Barra Reta</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Fechada Barra Reta</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Baixa Unilateral Supinada</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Baixa Barra H</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps na Polia com Corda</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Testa na Polia Barra Reta</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Francês na Polia com Corda</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Infra Paralelas</div></div><div class="ex-badge">4×12-15</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m2-t5">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T5</div>
+    <div class="t-info"><div class="t-name">Bumbum, Ombro e Trapézio</div><div class="t-focus">Arnold · Glúteo · Terra Sumô · Búlgaro</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m2-t5')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">💡 2× 12-15 reps + 1 série até a falha</div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Desenvolvimento Arnold Sentado</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Encolhimento de Ombros com Halteres</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Face Pull</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Glúteo Gráviton</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Glúteo Coice na Polia</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Levantamento Terra Sumô</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Stiff Unilateral</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Agachamento Búlgaro</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Supra com Corda na Polia</div></div><div class="ex-badge">4×10-12</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m2-t6">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T6</div>
+    <div class="t-info"><div class="t-name">Peitoral e Bíceps</div><div class="t-focus">Supino Smith · Crucifixo · Roscas variadas</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m2-t6')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">💡 2× 12-15 reps + 1 série até a falha · TABATA abdominal no final</div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Reto Smith</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Inclinado Smith</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Crucifixo com Halteres</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Declinado</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Concentrada</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Martelo Alternado Banco Inclinado</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Direta na Polia Baixa com Corda</div></div><div class="ex-badge">2×12-15 + MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Escalador TABATA · 20s ON/10s OFF × 8</div></div><div class="ex-badge b">Tabata</div></div>
+    </div>
+  </div>
+</div>
+
+</div>
+<!-- MES 3 -->
+<div class="month-content" id="month-3">
+
+<div class="train-card" data-tid="m3-t1">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T1</div>
+    <div class="t-info"><div class="t-name">Pernas, Ombro e Trapézio</div><div class="t-focus">Volume alto · Drop Set · 10×10 Extensora</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m3-t1')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">🔥 Volume alto e Drop Set. Prepara pra chorar! 😅</div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Panturrilha Sentada (Máquina)</div></div><div class="ex-badge">3×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Cadeira Extensora — VOLUME</div><div class="ex-detail">Fritar as coxas!</div></div><div class="ex-badge">10×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Leg Press Horizontal Unilateral</div></div><div class="ex-badge">4×8-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Agachamento Taça na Polia Baixa — Drop Set</div><div class="ex-detail">10 reps → 10s → reduz carga → 10 reps → 10s → reduz → 10 reps</div></div><div class="ex-badge p">4× Drop Set</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Desenvolvimento Sentado com Halteres</div></div><div class="ex-badge">4×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Elevação Frontal Sentado com Rotação</div></div><div class="ex-badge">4×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Alta com Halteres</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Encolhimento de Ombros com Halteres</div></div><div class="ex-badge">3×10-12</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m3-t2">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T2</div>
+    <div class="t-info"><div class="t-name">Costas Largas e Braço Grande</div><div class="t-focus">Força + Tri-set Bíceps · Core intercalado</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m3-t2')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">💡 Abdominal intercalado entre séries de costas · Tri-set bíceps sem pausa</div>
+    <div class="sec-title">Costas + Core intercalado</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Aberta com Barra Reta</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">↳ Abdominal Oblíquo Unilateral (entre séries)</div></div><div class="ex-badge b">30s cada lado</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Fechada Supinada</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Baixa com Triângulo</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Baixa Aberta</div></div><div class="ex-badge">3×10-12</div></div>
+    </div>
+    <div class="sec-title">Tri-set Bíceps (sem descanso entre exercícios)</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Scott Barra H + Halteres + Martelo</div><div class="ex-detail">5 rodadas sem pausa entre os 3 exercícios</div></div><div class="ex-badge p">5× 10+10+10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Prancha Isométrica</div></div><div class="ex-badge b">1×120s</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Simultânea na Polia Alta</div></div><div class="ex-badge">3×8-12</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m3-t3">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T3</div>
+    <div class="t-info"><div class="t-name">Bumbum, Ombro e Trapézio</div><div class="t-focus">Bi-set · Terra Sumô · Glúteo · Coice</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m3-t3')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">💡 Força + glúteos + Bi-set Good Morning / Hack</div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Stiff Unilateral com Halteres</div></div><div class="ex-badge">3×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Bi-set: Good Morning + Agachamento Hack</div><div class="ex-detail">Sem pausa entre os 2 exercícios</div></div><div class="ex-badge p">3× 10+MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Levantamento Terra Sumô</div></div><div class="ex-badge">4×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdução de Quadril (Máquina)</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Búlgaro</div></div><div class="ex-badge">3×8</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Coice de Glúteo na Polia (Perna Estendida)</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Hiperextensão Lombar</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Desenvolvimento na Máquina (Pegada Neutra)</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Face Pull na Polia Média (Corda)</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Alta na Polia Baixa (Barra Reta)</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Elevação Lateral na Polia com Triângulo</div></div><div class="ex-badge">3×10-12</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m3-t4">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T4</div>
+    <div class="t-info"><div class="t-name">Peitoral e Tríceps</div><div class="t-focus">Bi-set Crossover · Supino Máquina · Tri-set Tríceps</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m3-t4')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">💡 Bi-set + cardio metabólico intercalado entre séries</div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Bi-set: Crossover Polia Alta + Polia Baixa</div></div><div class="ex-badge p">5× 10+10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">↳ Corrida Estacionária (entre séries)</div></div><div class="ex-badge b">60s</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Inclinado na Máquina</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino na Máquina</div></div><div class="ex-badge">3×10-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Francês Sentado com Halteres</div></div><div class="ex-badge">4×8-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Testa com Barra W</div></div><div class="ex-badge">3×8-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Unilateral na Polia Alta (Pronada)</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Crunch (Máquina)</div></div><div class="ex-badge">4×10-12</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m3-t5">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T5</div>
+    <div class="t-info"><div class="t-name">Peitoral Pirâmide + Tríceps Tri-set</div><div class="t-focus">Supino com Barra Pirâmide · Tri-set Tríceps · TABATA</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m3-t5')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">💡 Pirâmide crescente + Tri-set tríceps + cardio metabólico entre séries</div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Reto com Barra — Pirâmide</div><div class="ex-detail">15 / 12 / 10 / 8 / 4 reps (carga crescente)</div></div><div class="ex-badge">5× pirâmide</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">↳ Polichinelo Frontal (entre séries)</div></div><div class="ex-badge b">60s</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Inclinado com Barra — Pirâmide</div><div class="ex-detail">12 / 10 / 8 / 4 reps</div></div><div class="ex-badge">4× pirâmide</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Crucifixo na Polia Média</div></div><div class="ex-badge">4×8</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Peck Deck</div></div><div class="ex-badge">3×15-20</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tri-set Tríceps: Corda + Testa + Francês</div><div class="ex-detail">Sem pausa entre os 3 exercícios</div></div><div class="ex-badge p">4× 10+10+MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Paralela</div></div><div class="ex-badge">3× MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Infra Paralelas — TABATA</div><div class="ex-detail">20s ON / 10s OFF × 8</div></div><div class="ex-badge b">Tabata</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m3-t6">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T6</div>
+    <div class="t-info"><div class="t-name">Costas e Bíceps Tri-set</div><div class="t-focus">Barra Fixa · Remada Pirâmide · Tri-set Bíceps</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m3-t6')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Barra Fixa no Gráviton</div></div><div class="ex-badge">4×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Crucifixo Inverso com Halteres</div></div><div class="ex-badge">3×10-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Cavalinho Pegada Neutra — Pirâmide</div><div class="ex-detail">15 / 12 / 10 / 6 reps</div></div><div class="ex-badge">4× pirâmide</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Curvada com Barra H (Neutra)</div></div><div class="ex-badge">3×8-12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tri-set Bíceps Polia: Direta + Inversa + Concentrada</div><div class="ex-detail">Sem pausa entre os 3 exercícios</div></div><div class="ex-badge p">4× 10+10+MAX</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Direta Barra Reta (Banco Declinado)</div></div><div class="ex-badge">4×12</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Supra Solo — TABATA</div><div class="ex-detail">20s ON / 10s OFF × 8</div></div><div class="ex-badge b">Tabata</div></div>
+    </div>
+  </div>
+</div>
+
+</div>
+<!-- MES 4 -->
+<div class="month-content" id="month-4">
+
+<div class="train-card" data-tid="m4-t1">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T1</div>
+    <div class="t-info"><div class="t-name">Pernas + Ombro — Força</div><div class="t-focus">Mais peso, menos reps · HIIT Bicicleta</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m4-t1')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">💡 Mais peso, menos repetições. Foco em força.</div>
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Agachamento Livre com Barra · 20kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Levantamento Terra · 15kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Elevação de Quadril com Barra · 30kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Stiff no Smith</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Desenvolvimento no Smith · 20kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Alta no Smith · 12kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Agachamento Sumô no Step com Halteres</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Flexora Unilateral (Máquina) · 10kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Glúteo 4 Apoios com Banco na Polia</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Panturrilha no Leg Press 45°</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Desenvolvimento com Barra Reta · 12kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Elevação Lateral Simultânea na Polia Baixa · 5kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Crunch (Máquina)</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Infra nas Paralelas (Pernas Estendidas)</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Prancha Alternada com Peso</div></div><div class="ex-badge">2×8-10</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m4-t2">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T2</div>
+    <div class="t-info"><div class="t-name">Peito, Costas, Bíceps e Tríceps — Volume</div><div class="t-focus">Mais reps, menos peso · HIIT Elíptico</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m4-t2')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="method-note">💡 Mais repetições, menos peso. Volume e resistência.</div>
+    <div class="sec-title">Peito</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Reto no Banco + com Halteres · 10kg</div><div class="ex-detail">Combinado</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Inclinado no Banco + com Halteres</div><div class="ex-detail">Combinado</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Declinado com Barra Reta</div></div><div class="ex-badge">2×12-15</div></div>
+    </div>
+    <div class="sec-title">Costas</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Fechada (Barra Reta) · 30kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Neutra (Triângulo) · 30kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Baixa (Barra H)</div></div><div class="ex-badge">2×12-15</div></div>
+    </div>
+    <div class="sec-title">Bíceps</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Scott (Barra W) · 12,5kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Alternada na Polia Baixa · 2,5kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Concentrada na Polia Baixa · 10kg</div></div><div class="ex-badge">2×12-15</div></div>
+    </div>
+    <div class="sec-title">Tríceps</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Cruzado na Polia Alta</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Francês com Barra</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps na Polia (Barra W)</div></div><div class="ex-badge">2×12-15</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m4-t3">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T3</div>
+    <div class="t-info"><div class="t-name">Perna, Ombro e Trapézio</div><div class="t-focus">Hack · Glúteo · Terra · Sprint HIIT</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m4-t3')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="sec-title">Pernas e Glúteos</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Agachamento Hack · 70kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Panturrilha Unilateral no Hack · 15kg</div></div><div class="ex-badge">2×20</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Agachamento Sumô no Smith · 10kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Glúteo 4 Apoios no Smith</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Levantamento Terra</div></div><div class="ex-badge">2×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Mesa Flexora · 25kg</div></div><div class="ex-badge">2×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Elevação de Quadril com Barra · 20kg</div></div><div class="ex-badge">2×8-10</div></div>
+    </div>
+    <div class="sec-title">Ombro e Trapézio</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Crucifixo Inverso (Máquina)</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Alta (Barra W) · 12,5kg</div></div><div class="ex-badge">2×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Elevação Frontal Unilateral na Polia · 2,5kg</div></div><div class="ex-badge">2×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Elevação Lateral Unilateral na Polia Baixa · 2,5kg</div></div><div class="ex-badge">2×10</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m4-t4">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T4</div>
+    <div class="t-info"><div class="t-name">Peito, Costas, Bíceps e Tríceps — Força</div><div class="t-focus">Mais peso, menos reps · TABATA + HIIT</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m4-t4')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="sec-title">Peito</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Reto no Smith · 10kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Inclinado no Banco · 10kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Crucifixo na Máquina · 25,4kg</div></div><div class="ex-badge">2×8-10</div></div>
+    </div>
+    <div class="sec-title">Costas</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Alta Articulada Unilateral · 39kg</div></div><div class="ex-badge">2×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Neutra (Triângulo) · 25kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Remada Baixa (Triângulo) · 20kg</div></div><div class="ex-badge">2×8-10</div></div>
+    </div>
+    <div class="sec-title">Bíceps</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Direta (Barra Reta) · 10kg</div></div><div class="ex-badge">2×8-10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Scott (Máquina) · 10kg</div></div><div class="ex-badge">2×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Simultânea na Polia Alta</div></div><div class="ex-badge">2×10</div></div>
+    </div>
+    <div class="sec-title">Tríceps</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Paralela no Gráviton · 70kg</div></div><div class="ex-badge">2×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps na Polia (Barra Reta) · 10kg</div></div><div class="ex-badge">2×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Coice Unilateral com Halteres</div></div><div class="ex-badge">2×10</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m4-t5">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T5</div>
+    <div class="t-info"><div class="t-name">Perna + Ombro — Pirâmide Máxima</div><div class="t-focus">Agachamento Smith 6× pirâmide · Leg Press · Glúteo</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m4-t5')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="sec-title">Perna, Ombro e Trapézio</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Agachamento no Smith — Pirâmide Crescente</div><div class="ex-detail">20 / 12 / 10 / 8 / 4 / 2 reps (cargas progressivas)</div></div><div class="ex-badge">6× pirâmide</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Leg Press 45° · 80kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Cadeira Extensora · 39kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Glúteo no Gráviton</div></div><div class="ex-badge">2×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdução de Quadril (Máquina) · 52,6kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Adução de Quadril (Máquina) · 59kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Panturrilha Sentada (Máquina)</div></div><div class="ex-badge">2×20</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Desenvolvimento Sentado com Halteres · 5kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Elevação Frontal Alternada</div></div><div class="ex-badge">2×20</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Elevação Lateral Sentado com Halteres · 5kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Encolhimento no Smith (costas + frente) · 2,5kg</div></div><div class="ex-badge">2×10 cada</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal na Máquina · 30kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Supra com Corda (Polia)</div></div><div class="ex-badge">2×12-15</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="train-card" data-tid="m4-t6">
+  <div class="t-header" onclick="toggleT(this)">
+    <div class="t-num">T6</div>
+    <div class="t-info"><div class="t-name">Peito, Costas e Braços</div><div class="t-focus">Supino · Barra Fixa · Rosca 21 · TABATA · HIIT</div></div>
+    <div class="t-actions"><span class="t-tag tag-m">Musculação</span><button class="check-btn" onclick="markDone(event,'m4-t6')">✓</button><span class="chevron">▾</span></div>
+  </div>
+  <div class="t-body">
+    <div class="sec-title">Musculação</div>
+    <div class="ex-list">
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Supino Reto com Barra · 10kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Crossover Polia Alta + Polia Baixa · 2,5kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Barra Fixa no Gráviton · 70kg</div></div><div class="ex-badge">2×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Puxada Aberta com Barra Reta · 30kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca Concentrada · 5kg cada lado</div></div><div class="ex-badge">2×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Rosca 21 (Barra Reta) · 12,5kg</div><div class="ex-detail">7 baixo + 7 alto + 7 completo</div></div><div class="ex-badge p">2 séries</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Testa (Barra Reta) · 10kg</div></div><div class="ex-badge">2×12-15</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Tríceps Francês na Polia (Barra Reta) · 5kg</div></div><div class="ex-badge">2×10</div></div>
+      <div class="ex" onclick="toggleEx(this)"><div class="ex-ck">✓</div><div class="ex-info"><div class="ex-name">Abdominal Bicicleta — TABATA · 20s ON/10s OFF × 8</div></div><div class="ex-badge b">Tabata</div></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- SEMANA COUNTER + CALENDAR + PESO (dentro da seção treinos) -->
+<div class="week-counter-card fade-in">
+  <div class="wc-icon">📅</div>
+  <div class="wc-info">
+    <div class="wc-title" id="wc-title">Calculando semana...</div>
+    <div class="wc-sub" id="wc-sub">Início do plano: 28/01/2026</div>
+  </div>
+  <div class="wc-badge" id="wc-badge">S—</div>
+</div>
+
+<div class="calendar-card fade-in">
+  <div class="cal-header">
+    <div class="cal-title" id="cal-month-label">Calendário de Treinos</div>
+    <div class="cal-nav">
+      <button class="cal-btn" onclick="calNav(-1)">‹</button>
+      <button class="cal-btn" onclick="calNav(1)">›</button>
+    </div>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+  <div class="cal-streak">🔥 Sequência atual: <span id="cal-streak">0</span> dias</div>
+</div>
+
+<div class="weight-card fade-in">
+  <div class="weight-header">
+    <div class="weight-title">Progresso de Peso</div>
+    <div class="weight-current"><span id="w-current">98,9</span> <span>kg atual</span></div>
+  </div>
+  <div class="weight-input-row">
+    <input class="weight-input" type="number" id="w-input" placeholder="Ex: 97.5" step="0.1" min="40" max="250">
+    <button class="weight-add-btn" onclick="addWeight()">+ Registrar</button>
+  </div>
+  <div class="weight-chart"><canvas class="wc-canvas" id="w-chart"></canvas></div>
+  <div class="weight-entries" id="w-entries"><div class="weight-empty">Nenhum registro ainda. Adicione seu peso acima!</div></div>
+</div>
+
+</div><!-- /section-treinos -->
+
+<!-- ═══════════ SEÇÃO BIO ═══════════ -->
+<div class="section-page" id="section-bio">
+
+<!-- BIOIMPEDANCIA -->
+<div class="bio-section">
+
+  <!-- BIO HEADER -->
+  <div class="bio-header">
+    <div class="bio-eyebrow">Bioimpedância · InBody · 21/04/2026</div>
+    <div class="bio-title">ANÁLISE<br><span class="acc">CORPORAL</span></div>
+    <div class="bio-sub">Emerson Soares · 27 anos · 174cm · Masculino</div>
+  </div>
+
+  <!-- SCORE PRINCIPAL -->
+  <div class="score-card">
+    <div class="score-left">
+      <div class="score-num">54</div>
+      <div class="score-denom">/100</div>
+      <div class="score-label">Score InBody</div>
+    </div>
+    <div class="score-bar-wrap">
+      <div class="score-track">
+        <div class="score-fill" data-w="54%"></div>
+        <div class="score-marker" style="left:54%"></div>
+      </div>
+      <div class="score-range-labels">
+        <span>0</span><span>Ruim</span><span>Normal</span><span>Ótimo</span><span>100</span>
+      </div>
+    </div>
+    <div class="score-note">Uma pessoa musculosa pode marcar acima de 100</div>
+  </div>
+
+  <!-- 4 STATS PRINCIPAIS -->
+  <div class="bio-stats-4">
+    <div class="bstat bstat-warn">
+      <div class="bstat-icon">⚖️</div>
+      <div class="bstat-val">98,9<span>kg</span></div>
+      <div class="bstat-name">Peso atual</div>
+      <div class="bstat-ref">Meta: 70,3 kg</div>
+    </div>
+    <div class="bstat bstat-warn">
+      <div class="bstat-icon">🔥</div>
+      <div class="bstat-val">39,6<span>%</span></div>
+      <div class="bstat-name">% Gordura</div>
+      <div class="bstat-ref">Meta: abaixo de 20%</div>
+    </div>
+    <div class="bstat bstat-ok">
+      <div class="bstat-icon">💪</div>
+      <div class="bstat-val">33,9<span>kg</span></div>
+      <div class="bstat-name">Massa Muscular</div>
+      <div class="bstat-ref">Preservada ✅</div>
+    </div>
+    <div class="bstat bstat-neutral">
+      <div class="bstat-icon">⚡</div>
+      <div class="bstat-val">1.661<span>kcal</span></div>
+      <div class="bstat-name">Taxa Metabólica</div>
+      <div class="bstat-ref">Gasto em repouso</div>
+    </div>
+  </div>
+
+  <!-- EVOLUÇÃO JAN → ABR -->
+  <div class="bio-card">
+    <div class="bio-card-header">
+      <div class="bio-card-title">Evolução</div>
+      <div class="bio-card-sub">Janeiro → Abril 2026</div>
+    </div>
+    <div class="evo-grid">
+      <div class="evo-item">
+        <div class="evo-label">Peso</div>
+        <div class="evo-vals">
+          <span class="evo-before">109 kg</span>
+          <span class="evo-arrow">→</span>
+          <span class="evo-after">98,9 kg</span>
+        </div>
+        <div class="evo-bar-wrap">
+          <div class="evo-bar-track">
+            <div class="evo-bar-fill" style="width:90.7%"></div>
+            <div class="evo-bar-now" style="width:82%"></div>
+          </div>
+        </div>
+        <div class="evo-delta">−10,1 kg ✅</div>
+      </div>
+      <div class="evo-item">
+        <div class="evo-label">Gordura</div>
+        <div class="evo-vals">
+          <span class="evo-before">48 kg</span>
+          <span class="evo-arrow">→</span>
+          <span class="evo-after">39,1 kg</span>
+        </div>
+        <div class="evo-bar-wrap">
+          <div class="evo-bar-track">
+            <div class="evo-bar-fill" style="width:100%"></div>
+            <div class="evo-bar-now" style="width:81.5%"></div>
+          </div>
+        </div>
+        <div class="evo-delta">−8,9 kg ✅</div>
+      </div>
+      <div class="evo-item">
+        <div class="evo-label">Músculo</div>
+        <div class="evo-vals">
+          <span class="evo-before">34 kg</span>
+          <span class="evo-arrow">→</span>
+          <span class="evo-after">33,9 kg</span>
+        </div>
+        <div class="evo-bar-wrap">
+          <div class="evo-bar-track">
+            <div class="evo-bar-fill evo-blue" style="width:100%"></div>
+            <div class="evo-bar-now evo-blue-now" style="width:99.7%"></div>
+          </div>
+        </div>
+        <div class="evo-delta evo-delta-blue">Preservado ✅</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- METAS DE PROGRESSO -->
+  <div class="bio-card">
+    <div class="bio-card-header">
+      <div class="bio-card-title">Metas de Progresso</div>
+      <div class="bio-card-sub">Distância até o objetivo</div>
+    </div>
+    <div class="prog-list">
+      <div class="prog-item-full">
+        <div class="prog-item-top">
+          <span class="prog-item-name">% Gordura corporal</span>
+          <span class="prog-item-nums"><b>39,6%</b> → 20%</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill o" style="width:0%" data-w="82%"></div></div>
+        <div class="prog-item-status warn">⚠️ Alto — foco principal</div>
+      </div>
+      <div class="prog-item-full">
+        <div class="prog-item-top">
+          <span class="prog-item-name">Gordura Visceral</span>
+          <span class="prog-item-nums"><b>Nível 19</b> → 9</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill o" style="width:0%" data-w="75%"></div></div>
+        <div class="prog-item-status warn">⚠️ Risco cardiovascular elevado</div>
+      </div>
+      <div class="prog-item-full">
+        <div class="prog-item-top">
+          <span class="prog-item-name">Massa Muscular Esquelética</span>
+          <span class="prog-item-nums"><b>33,9 kg</b> — manter</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill b" style="width:0%" data-w="68%"></div></div>
+        <div class="prog-item-status ok">✅ Bem preservada</div>
+      </div>
+      <div class="prog-item-full">
+        <div class="prog-item-top">
+          <span class="prog-item-name">Perda de peso total</span>
+          <span class="prog-item-nums"><b>−10,1 kg</b> de 28,6 kg</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill g" style="width:0%" data-w="35%"></div></div>
+        <div class="prog-item-status ok">✅ 35% da meta atingida</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPOSIÇÃO CORPORAL -->
+  <div class="bio-card">
+    <div class="bio-card-header">
+      <div class="bio-card-title">Composição Corporal</div>
+      <div class="bio-card-sub">O que forma o seu peso de 98,9 kg</div>
+    </div>
+    <div class="comp-bars">
+      <div class="comp-bar-item">
+        <div class="comp-bar-label">
+          <span>💧 Água</span>
+          <span class="comp-ok">43,5 L ✅</span>
+        </div>
+        <div class="comp-track"><div class="comp-fill comp-agua" style="width:44%"></div></div>
+        <div class="comp-ref">Ref: 37,5 – 45,8 L</div>
+      </div>
+      <div class="comp-bar-item">
+        <div class="comp-bar-label">
+          <span>🥩 Proteína</span>
+          <span class="comp-ok">11,9 kg ✅</span>
+        </div>
+        <div class="comp-track"><div class="comp-fill comp-prot" style="width:12%"></div></div>
+        <div class="comp-ref">Ref: 10 – 12,3 kg</div>
+      </div>
+      <div class="comp-bar-item">
+        <div class="comp-bar-label">
+          <span>🦴 Minerais</span>
+          <span class="comp-ok">4,3 kg ✅</span>
+        </div>
+        <div class="comp-track"><div class="comp-fill comp-min" style="width:4.3%"></div></div>
+        <div class="comp-ref">Ref: 3,4 – 4,2 kg</div>
+      </div>
+      <div class="comp-bar-item">
+        <div class="comp-bar-label">
+          <span>🔴 Gordura</span>
+          <span class="comp-bad">39,1 kg ⚠️</span>
+        </div>
+        <div class="comp-track"><div class="comp-fill comp-gord" style="width:39.5%"></div></div>
+        <div class="comp-ref">Ref: 8 – 16 kg</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INDICADORES LADO A LADO -->
+  <div class="bio-card">
+    <div class="bio-card-header">
+      <div class="bio-card-title">Indicadores de Saúde</div>
+      <div class="bio-card-sub">Valores de referência InBody</div>
+    </div>
+    <div class="indic-grid">
+      <div class="indic-item indic-bad">
+        <div class="indic-name">IMC</div>
+        <div class="indic-val">32,7</div>
+        <div class="indic-unit">kg/m²</div>
+        <div class="indic-status">Obesidade Grau I</div>
+        <div class="indic-ref">Ref: 18,5–25</div>
+      </div>
+      <div class="indic-item indic-bad">
+        <div class="indic-name">Gordura Visceral</div>
+        <div class="indic-val">19</div>
+        <div class="indic-unit">nível</div>
+        <div class="indic-status">Alto risco ⚠️</div>
+        <div class="indic-ref">Ref: 1–9</div>
+      </div>
+      <div class="indic-item indic-bad">
+        <div class="indic-name">Cintura/Quadril</div>
+        <div class="indic-val">0,99</div>
+        <div class="indic-unit">índice</div>
+        <div class="indic-status">Elevado ⚠️</div>
+        <div class="indic-ref">Ref: 0,80–0,90</div>
+      </div>
+      <div class="indic-item indic-bad">
+        <div class="indic-name">Grau Obesidade</div>
+        <div class="indic-val">148</div>
+        <div class="indic-unit">%</div>
+        <div class="indic-status">Acima ⚠️</div>
+        <div class="indic-ref">Ref: 90–110%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANÁLISE SEGMENTAR -->
+  <div class="bio-card">
+    <div class="bio-card-header">
+      <div class="bio-card-title">Análise Segmentar</div>
+      <div class="bio-card-sub">Distribuição por região do corpo</div>
+    </div>
+    <div class="seg-body">
+      <!-- silhueta central -->
+      <div class="seg-figure">
+        <svg viewBox="0 0 80 200" xmlns="http://www.w3.org/2000/svg" width="80" height="200">
+          <circle cx="40" cy="16" r="12" fill="#FF4D00" opacity=".7"/>
+          <rect x="22" y="30" width="36" height="52" rx="8" fill="#FF4D00" opacity=".5"/>
+          <rect x="4" y="32" width="16" height="44" rx="7" fill="#FF4D00" opacity=".4"/>
+          <rect x="60" y="32" width="16" height="44" rx="7" fill="#FF4D00" opacity=".4"/>
+          <rect x="24" y="84" width="14" height="56" rx="7" fill="#FF4D00" opacity=".45"/>
+          <rect x="42" y="84" width="14" height="56" rx="7" fill="#FF4D00" opacity=".45"/>
+          <rect x="24" y="138" width="14" height="50" rx="7" fill="#FF4D00" opacity=".35"/>
+          <rect x="42" y="138" width="14" height="50" rx="7" fill="#FF4D00" opacity=".35"/>
+        </svg>
+      </div>
+      <!-- dados à esquerda e direita -->
+      <div class="seg-left">
+        <div class="seg-item">
+          <div class="seg-seg-name">Braço Dir.</div>
+          <div class="seg-row-vals">
+            <span class="seg-magra">3,40 kg</span>
+            <span class="seg-divider">|</span>
+            <span class="seg-fat-val">3,40 kg</span>
+          </div>
+        </div>
+        <div class="seg-item seg-tronco">
+          <div class="seg-seg-name">Tronco</div>
+          <div class="seg-row-vals">
+            <span class="seg-magra">28,14 kg</span>
+            <span class="seg-divider">|</span>
+            <span class="seg-fat-val seg-fat-high">20,80 kg ⚠️</span>
+          </div>
+        </div>
+        <div class="seg-item">
+          <div class="seg-seg-name">Braço Esq.</div>
+          <div class="seg-row-vals">
+            <span class="seg-magra">3,62 kg</span>
+            <span class="seg-divider">|</span>
+            <span class="seg-fat-val">3,30 kg</span>
+          </div>
+        </div>
+        <div class="seg-item">
+          <div class="seg-seg-name">Perna Dir.</div>
+          <div class="seg-row-vals">
+            <span class="seg-magra">9,14 kg</span>
+            <span class="seg-divider">|</span>
+            <span class="seg-fat-val">5,10 kg</span>
+          </div>
+        </div>
+        <div class="seg-item">
+          <div class="seg-seg-name">Perna Esq.</div>
+          <div class="seg-row-vals">
+            <span class="seg-magra">9,16 kg</span>
+            <span class="seg-divider">|</span>
+            <span class="seg-fat-val">5,10 kg</span>
+          </div>
+        </div>
+        <div class="seg-legend">
+          <span class="leg-m">■ Massa Magra</span>
+          <span class="leg-f">■ Gordura</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TIPS -->
+<div class="tips">
+  <div class="tips-title">⚡ Regras de Ouro</div>
+  <div class="tip"><div class="tip-i">🥩</div><div class="tip-t"><strong>Proteína em toda refeição.</strong> 180–200g/dia. Frango, ovos, peixe, whey. Preserva o músculo enquanto emagrece.</div></div>
+  <div class="tip"><div class="tip-i">💧</div><div class="tip-t"><strong>3 litros de água por dia.</strong> Hidratação afeta metabolismo e performance.</div></div>
+  <div class="tip"><div class="tip-i">😴</div><div class="tip-t"><strong>7–8h de sono.</strong> Sono ruim eleva cortisol e favorece gordura abdominal.</div></div>
+  <div class="tip"><div class="tip-i">📅</div><div class="tip-t"><strong>Consistência > intensidade.</strong> 80% do plano toda semana por meses supera qualquer semana perfeita isolada.</div></div>
+  <div class="tip"><div class="tip-i">⚖️</div><div class="tip-t"><strong>Pese-se sempre no mesmo horário</strong> (manhã, em jejum). A balança flutua até 2kg por água.</div></div>
+</div>
+
+<footer>MFIT · Emerson Soares de Castro · Bioimpedância 21/04/2026</footer>
+</div><!-- /bio-section -->
+</div><!-- /section-bio -->
+
+</div><!-- /app -->
+
+<script>
+// In-memory + localStorage store
+var _store={};
+var S={
+  get:function(k){try{var v=localStorage.getItem('mfit_'+k);return v?JSON.parse(v):_store[k]||null;}catch(e){return _store[k]||null;}},
+  set:function(k,v){try{localStorage.setItem('mfit_'+k,JSON.stringify(v));}catch(e){}_store[k]=v;}
+};
+
+// SECTION NAV - override head stub with full version
+window.showSection=function(id){
+  document.querySelectorAll('.section-page').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.nav-tab').forEach(function(el){el.classList.remove('active');});
+  var sec=document.getElementById('section-'+id);
+  if(sec)sec.classList.add('active');
+  var tabs=document.querySelectorAll('.nav-tab');
+  if(id==='treinos'&&tabs[0])tabs[0].classList.add('active');
+  if(id==='bio'&&tabs[1])tabs[1].classList.add('active');
+  try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){}
+  setTimeout(initFadeIn,150);
+};
+
+// FADE IN
+function initFadeIn(){
+  var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});},{threshold:0.05});
+  document.querySelectorAll('.fade-in:not(.visible)').forEach(function(el){obs.observe(el);});
+}
+
+// PROGRESS BARS
+setTimeout(function(){
+  document.querySelectorAll('.prog-fill[data-w],.score-fill[data-w]').forEach(function(el){el.style.width=el.dataset.w;});
+  initFadeIn();
+},300);
+
+// DATE
+var d=new Date();
+var el=document.getElementById('today-date');
+if(el)el.textContent=d.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
+
+// SEMANA
+(function(){
+  var start=new Date('2026-01-28');
+  var today=new Date();
+  var diff=Math.floor((today-start)/(7*24*3600*1000));
+  var week=Math.max(1,Math.min(diff+1,16));
+  var wb=document.getElementById('wc-badge');if(wb)wb.textContent='S'+week;
+  var wn=document.getElementById('nav-week-num');if(wn)wn.textContent=week;
+  var wt=document.getElementById('wc-title');if(wt)wt.textContent='Semana '+week+' de 16';
+  var ws=document.getElementById('wc-sub');if(ws)ws.textContent='Início: 28/01/2026 · '+Math.round((week/16)*100)+'% do plano concluído';
+})();
+
+// TIMER
+var tSec=60,tTotal=60,tRun=false,tInt=null,aCtx=null;
+function getAC(){if(!aCtx)aCtx=new(window.AudioContext||window.webkitAudioContext)();return aCtx;}
+function beep(f,dur,v){try{var c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.setValueAtTime(v||0.3,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dur);o.start(c.currentTime);o.stop(c.currentTime+dur);}catch(e){}}
+function fmtT(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function updTD(){var el=document.getElementById('td');if(el){el.textContent=fmtT(tSec);el.className='timer-disp'+(tRun?(tSec<=10?' warn':' run'):'');}}
+window.setPreset=function(s,btn){tTotal=tSec=s;tRun=false;clearInterval(tInt);document.getElementById('tt').textContent='\u25b6 INICIAR';updTD();document.querySelectorAll('.preset-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');};
+window.toggleTimer=function(){if(tRun){clearInterval(tInt);tRun=false;document.getElementById('tt').textContent='\u25b6 CONTINUAR';}else{if(tSec===0)tSec=tTotal;tRun=true;document.getElementById('tt').textContent='\u23f8 PAUSAR';tInt=setInterval(function(){tSec--;updTD();if(tSec===10)beep(880,0.15);if(tSec===0){clearInterval(tInt);tRun=false;document.getElementById('tt').textContent='\u25b6 INICIAR';document.getElementById('td').className='timer-disp';beep(1320,0.1);setTimeout(function(){beep(1320,0.1);},200);setTimeout(function(){beep(1760,0.3);},400);}},1000);}};
+window.resetTimer=function(){clearInterval(tInt);tRun=false;tSec=tTotal;document.getElementById('tt').textContent='\u25b6 INICIAR';updTD();};
+
+// TRAIN CARD + NOTES
+window.toggleT=function(h){
+  var card=h.closest('.train-card');
+  card.classList.toggle('open');
+  if(card.classList.contains('open')&&!card.querySelector('.notes-panel')){
+    var tid=card.dataset.tid;
+    if(!tid)return;
+    var saved=S.get('note_'+tid)||'';
+    var panel=document.createElement('div');
+    panel.className='notes-panel';
+    panel.innerHTML='<div class="notes-label">\ud83d\udcdd Notas do treino</div>'
+      +'<textarea class="notes-textarea" id="note-'+tid+'" placeholder="Ex: Supino 60kg 4x12 ok. Aumentar carga...">'+saved+'</textarea>'
+      +'<div class="notes-footer"><button class="notes-save-btn" onclick="saveNote(''+tid+'')">Salvar</button>'
+      +'<span class="notes-saved" id="saved-'+tid+'">\u2713 Salvo!</span></div>';
+    card.querySelector('.t-body').appendChild(panel);
+  }
+};
+window.saveNote=function(tid){
+  var val=document.getElementById('note-'+tid).value;
+  S.set('note_'+tid,val);
+  var el=document.getElementById('saved-'+tid);
+  el.classList.add('show');
+  setTimeout(function(){el.classList.remove('show');},2000);
+};
+
+// EXERCISE
+window.toggleEx=function(el){el.classList.toggle('done');};
+
+// DONE / HISTORY
+var done=new Set();
+var curM=1;
+window.markDone=function(e,id){
+  e.stopPropagation();
+  var card=document.querySelector('[data-tid="'+id+'"]');
+  var btn=e.currentTarget;
+  if(done.has(id)){done.delete(id);card.classList.remove('completed');btn.classList.remove('checked');rmTrainDay();}
+  else{done.add(id);card.classList.add('completed');btn.classList.add('checked');beep(660,0.08);setTimeout(function(){beep(880,0.1);},100);addTrainDay();}
+  updCount();
+};
+function updCount(){
+  var p='m'+curM+'-';
+  var ids=['t1','t2','t3','t4','t5','t6'];
+  var tots=ids.filter(function(i){return document.querySelector('[data-tid="'+p+i+'"]');}).length;
+  var dn=[...done].filter(function(i){return i.startsWith(p);}).length;
+  var db=document.getElementById('done-badge');if(db)db.textContent=dn+' / '+tots+' treinos';
+  var wl=document.getElementById('ws-label');if(wl)wl.textContent=(dn===tots&&tots>0)?'\ud83d\udd25 Semana completa!':'Treinos em andamento';
+}
+
+// MONTH
+window.selectMonth=function(n){
+  curM=n;
+  document.querySelectorAll('.month-content').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.month-btn').forEach(function(el){el.classList.remove('active');});
+  var mc=document.getElementById('month-'+n);
+  if(mc)mc.classList.add('active');
+  document.querySelectorAll('.month-btn')[n-1].classList.add('active');
+  updCount();
+};
+
+// CALENDAR
+var calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
+function getTD(){return S.get('trained_days')||[];}
+function addTrainDay(){var days=getTD();var t=new Date().toISOString().split('T')[0];if(!days.includes(t)){days.push(t);S.set('trained_days',days);}renderCal();}
+function rmTrainDay(){if(done.size===0){var days=getTD();var t=new Date().toISOString().split('T')[0];var i=days.indexOf(t);if(i>-1){days.splice(i,1);S.set('trained_days',days);}renderCal();}}
+window.calNav=function(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();};
+window.toggleCalDay=function(ds){var days=getTD();var i=days.indexOf(ds);if(i>-1)days.splice(i,1);else days.push(ds);S.set('trained_days',days);renderCal();};
+function renderCal(){
+  var trained=getTD();
+  var todayStr=new Date().toISOString().split('T')[0];
+  var grid=document.getElementById('cal-grid');
+  if(!grid)return;
+  var months=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var dnames=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+  var lbl=document.getElementById('cal-month-label');
+  if(lbl)lbl.textContent=months[calMonth]+' '+calYear;
+  var html='';
+  dnames.forEach(function(dn){html+='<div class="cal-day-name">'+dn+'</div>';});
+  var first=new Date(calYear,calMonth,1).getDay();
+  var last=new Date(calYear,calMonth+1,0).getDate();
+  var prevLast=new Date(calYear,calMonth,0).getDate();
+  for(var i=0;i<first;i++)html+='<div class="cal-day other-month">'+(prevLast-first+1+i)+'</div>';
+  for(var day=1;day<=last;day++){
+    var ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+    var cls='cal-day';
+    if(ds===todayStr)cls+=' today';
+    if(trained.includes(ds))cls+=' trained';
+    html+='<div class="'+cls+'" onclick="toggleCalDay(''+ds+'')">'+day+'</div>';
+  }
+  var rem=(7-((first+last)%7))%7;
+  for(var i=1;i<=rem;i++)html+='<div class="cal-day other-month">'+i+'</div>';
+  grid.innerHTML=html;
+  var streak=0;var chk=new Date();
+  while(streak<365){var s=chk.toISOString().split('T')[0];if(trained.includes(s)){streak++;chk.setDate(chk.getDate()-1);}else break;}
+  var cs=document.getElementById('cal-streak');if(cs)cs.textContent=streak;
+}
+
+// PESO
+function getWts(){return S.get('weights')||[];}
+window.addWeight=function(){
+  var inp=document.getElementById('w-input');
+  var val=parseFloat(inp.value.replace(',','.'));
+  if(!val||val<40||val>300){inp.style.borderColor='var(--orange)';setTimeout(function(){inp.style.borderColor='';},1000);return;}
+  var wts=getWts();
+  wts.unshift({date:new Date().toISOString().split('T')[0],val:val});
+  if(wts.length>60)wts.length=60;
+  S.set('weights',wts);inp.value='';renderWeights();
+};
+window.delWeight=function(i){var wts=getWts();wts.splice(i,1);S.set('weights',wts);renderWeights();};
+function renderWeights(){
+  var wts=getWts();
+  var cur=document.getElementById('w-current');
+  var ent=document.getElementById('w-entries');
+  if(!cur)return;
+  cur.textContent=wts.length?wts[0].val.toFixed(1):'98,9';
+  if(!wts.length){ent.innerHTML='<div class="weight-empty">Nenhum registro ainda. Adicione seu peso acima!</div>';drawWChart([]);return;}
+  ent.innerHTML=wts.map(function(w,i){
+    var prev=wts[i+1];
+    var delta='';
+    if(prev){var diff=w.val-prev.val;var cls=diff>0?'pos':'neg';delta='<span class="we-delta '+cls+'">'+(diff>0?'+':'')+diff.toFixed(1)+'kg</span>';}
+    var dl=new Date(w.date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+    return '<div class="we-row"><span class="we-date">'+dl+'</span><span class="we-val">'+w.val.toFixed(1)+' kg</span>'+delta+'<span class="we-del" onclick="delWeight('+i+')">\u2715</span></div>';
+  }).join('');
+  drawWChart([...wts].reverse());
+}
+function drawWChart(wts){
+  var canvas=document.getElementById('w-chart');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var W=canvas.offsetWidth||320,H=120;
+  var dpr=window.devicePixelRatio||1;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  ctx.scale(dpr,dpr);ctx.clearRect(0,0,W,H);
+  if(wts.length<2){ctx.fillStyle='rgba(255,255,255,0.15)';ctx.font='11px monospace';ctx.textAlign='center';ctx.fillText('Adicione mais registros para ver o gráfico',W/2,H/2);return;}
+  var vals=wts.map(function(w){return w.val;});
+  var mn=Math.min.apply(null,vals)-1,mx=Math.max.apply(null,vals)+1;
+  var p={l:8,r:8,t:14,b:8};var gW=W-p.l-p.r,gH=H-p.t-p.b;
+  var xS=gW/(wts.length-1);
+  var yS=function(v){return p.t+gH-(((v-mn)/(mx-mn))*gH);};
+  if(70.3>=mn&&70.3<=mx){var gy=yS(70.3);ctx.setLineDash([4,3]);ctx.strokeStyle='rgba(0,217,126,0.4)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(p.l,gy);ctx.lineTo(W-p.r,gy);ctx.stroke();ctx.fillStyle='rgba(0,217,126,0.6)';ctx.font='9px monospace';ctx.textAlign='right';ctx.fillText('Meta 70,3',W-p.r,gy-3);ctx.setLineDash([]);}
+  var grad=ctx.createLinearGradient(0,p.t,0,H);grad.addColorStop(0,'rgba(255,77,0,0.35)');grad.addColorStop(1,'rgba(255,77,0,0)');
+  ctx.beginPath();wts.forEach(function(w,i){var x=p.l+i*xS,y=yS(w.val);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.lineTo(p.l+(wts.length-1)*xS,H-p.b);ctx.lineTo(p.l,H-p.b);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();wts.forEach(function(w,i){var x=p.l+i*xS,y=yS(w.val);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='#FF4D00';ctx.lineWidth=2;ctx.lineJoin='round';ctx.stroke();
+  wts.forEach(function(w,i){var x=p.l+i*xS,y=yS(w.val);ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fillStyle='#FF4D00';ctx.fill();if(i===0||i===wts.length-1||wts.length<=8){ctx.fillStyle='rgba(255,255,255,0.75)';ctx.font='9px monospace';ctx.textAlign='center';ctx.fillText(w.val.toFixed(1),x,y-7);}});
+}
+
+// INIT
+updTD();
+updCount();
+renderCal();
+renderWeights();
+document.querySelectorAll('.train-card,.bio-card,.score-card,.bio-stats-4,.weight-card,.calendar-card,.week-counter-card').forEach(function(el){el.classList.add('fade-in');});
+setTimeout(initFadeIn,200);
+</script>
+</body></html>
