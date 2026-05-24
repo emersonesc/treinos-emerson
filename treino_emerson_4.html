@@ -379,6 +379,57 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
 @media(max-width:480px){.stats-grid{grid-template-columns:repeat(2,1fr);}.title{font-size:52px;}.timer-disp{font-size:36px;}.prog-lbl{min-width:90px;}}
 
+/* ═══════════ MOBILE DESIGN ═══════════ */
+.top-nav{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));}
+
+/* Bottom Nav */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:rgba(8,8,8,0.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border2);padding:6px max(16px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));}
+.bottom-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:12px;border:none;background:transparent;color:var(--text3);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.bottom-tab-icon{font-size:26px;line-height:1.1;transition:transform .2s;}
+.bottom-tab-label{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.bottom-tab.active{color:var(--accent);}
+.bottom-tab.active .bottom-tab-icon{transform:scale(1.1);}
+
+@media(max-width:640px){
+  .bottom-nav{display:flex;gap:2px;}
+  .top-nav .nav-tabs{display:none;}
+  .nav-week{display:none;}
+  .app{padding-bottom:calc(80px + env(safe-area-inset-bottom));}
+
+  /* Touch targets */
+  .ex{min-height:52px;padding:12px 14px;gap:12px;}
+  .ex-ck{width:26px;height:26px;}
+  .ex-name{font-size:13px;}
+  .check-btn{width:38px;height:38px;font-size:15px;}
+  .preset-btn{padding:10px 16px;font-size:11px;}
+  .ctrl-btn{padding:14px 26px;font-size:12px;min-height:48px;}
+  .month-btn{padding:16px 6px;}
+  .mb-num{font-size:20px;}
+  .mb-lbl{font-size:8px;}
+  .t-header{padding:18px 16px;gap:12px;}
+  .t-num{font-size:24px;min-width:38px;}
+  .t-name{font-size:16px;}
+  .cal-btn{width:36px;height:36px;}
+  .cal-day{font-size:13px;border-radius:8px;}
+  .notes-save-btn{padding:8px 16px;font-size:10px;}
+
+  /* Prevent iOS zoom on input */
+  .weight-input{font-size:16px;}
+  .notes-textarea{font-size:16px;}
+  .weight-add-btn{padding:13px 18px;}
+
+  /* Spacing */
+  .stat-card{padding:14px 12px;}
+  .stat-val{font-size:20px;}
+  .timer-wrap{padding:18px 16px;}
+  .month-nav{gap:5px;margin-bottom:10px;}
+  .t-body{padding:0 14px 16px;}
+  .bio-card{padding:18px 16px;}
+  .score-num{font-size:44px;}
+  .bstat-val{font-size:22px;}
+  .weight-card{padding:18px 16px;}
+  .calendar-card{padding:18px 16px;}
+}
 
 </style>
 </head>
@@ -396,6 +447,18 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
     </div>
     <div class="nav-week">Semana <span id="nav-week-num">—</span></div>
   </div>
+</nav>
+
+<!-- BOTTOM NAV (mobile) -->
+<nav class="bottom-nav">
+  <button class="bottom-tab active" id="btab-treinos" onclick="showSection('treinos')">
+    <span class="bottom-tab-icon">💪</span>
+    <span class="bottom-tab-label">Treinos</span>
+  </button>
+  <button class="bottom-tab" id="btab-bio" onclick="showSection('bio')">
+    <span class="bottom-tab-icon">📊</span>
+    <span class="bottom-tab-label">Bio</span>
+  </button>
 </nav>
 
 <div class="app">
@@ -1395,6 +1458,8 @@ window.showSection=function(id){
   var tabs=document.querySelectorAll('.nav-tab');
   if(id==='treinos'&&tabs[0])tabs[0].classList.add('active');
   if(id==='bio'&&tabs[1])tabs[1].classList.add('active');
+  document.querySelectorAll('.bottom-tab').forEach(function(b){b.classList.remove('active');});
+  var bt=document.getElementById('btab-'+id);if(bt)bt.classList.add('active');
   try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){}
   setTimeout(initFadeIn,150);
 };
