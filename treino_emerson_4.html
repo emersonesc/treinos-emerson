@@ -40,6 +40,7 @@ function resetTimer(){if(window._resetTimer)window._resetTimer();}
 <style>
 :root{
   --bg:#080808;--surface:#111;--surface2:#181818;--surface3:#202020;
+  --mob-bg:#000000;
   --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
   --accent:#FF4D00;--accent2:#FF7A3D;--accent-dim:rgba(255,77,0,0.12);
   --green:#00D97E;--green-dim:rgba(0,217,126,0.12);
@@ -380,6 +381,41 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
   .indic-grid{grid-template-columns:repeat(2,1fr);}
   .seg-body{flex-direction:column;}
   .bio-card-header{flex-direction:column;gap:4px;}
+}
+
+/* ── SKILL: mobile-design — touch-psychology + typography + color-system ── */
+@media(max-width:640px){
+  /* OLED: fundo preto puro economiza bateria */
+  body{background:var(--mob-bg);}
+  .top-nav{background:rgba(0,0,0,0.97);}
+  .bottom-nav{background:rgba(0,0,0,0.98);}
+
+  /* Typography: mínimo 14px para corpo (skill guideline) */
+  body{font-size:15px;}
+  .ex-name{font-size:14px;}
+  .ex-detail{font-size:12px;}
+  .t-focus{font-size:12px;}
+  .tip-t{font-size:14px;}
+  .stat-label{font-size:10px;}
+  .bio-sub,.sub{font-size:14px;}
+
+  /* Tap feedback: escala nos elementos interativos */
+  .ex:active,.train-card .t-header:active{transform:scale(0.985);transition:transform .08s;}
+  .ctrl-btn:active,.preset-btn:active,.month-btn:active,.check-btn:active,
+  .bottom-tab:active,.nav-tab:active,.cal-btn:active,.weight-add-btn:active{
+    transform:scale(0.92);transition:transform .08s;
+  }
+  .bottom-tab:active{background:var(--accent-dim);}
+
+  /* Ripple visual nos cards */
+  .train-card{transition:border-color .2s,transform .1s;}
+  .train-card .t-header:active{background:rgba(255,255,255,0.03);}
+
+  /* Scroll suave nativo */
+  .weight-entries,.month-content{-webkit-overflow-scrolling:touch;}
+
+  /* Thumb zone: deixar espaço suficiente acima do bottom nav */
+  .app{padding-bottom:calc(88px + env(safe-area-inset-bottom));}
 }
 ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
 @media(max-width:480px){.stats-grid{grid-template-columns:repeat(2,1fr);}.title{font-size:52px;}.timer-disp{font-size:36px;}.prog-lbl{min-width:90px;}}
@@ -1505,7 +1541,7 @@ function beep(f,dur,v){try{var c=getAC(),o=c.createOscillator(),g=c.createGain()
 function fmtT(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 function updTD(){var el=document.getElementById('td');if(el){el.textContent=fmtT(tSec);el.className='timer-disp'+(tRun?(tSec<=10?' warn':' run'):'');}}
 window.setPreset=function(s,btn){tTotal=tSec=s;tRun=false;clearInterval(tInt);document.getElementById('tt').textContent='\u25b6 INICIAR';updTD();document.querySelectorAll('.preset-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');};
-window.toggleTimer=function(){if(tRun){clearInterval(tInt);tRun=false;document.getElementById('tt').textContent='\u25b6 CONTINUAR';}else{if(tSec===0)tSec=tTotal;tRun=true;document.getElementById('tt').textContent='\u23f8 PAUSAR';tInt=setInterval(function(){tSec--;updTD();if(tSec===10)beep(880,0.15);if(tSec===0){clearInterval(tInt);tRun=false;document.getElementById('tt').textContent='\u25b6 INICIAR';document.getElementById('td').className='timer-disp';beep(1320,0.1);setTimeout(function(){beep(1320,0.1);},200);setTimeout(function(){beep(1760,0.3);},400);}},1000);}};
+window.toggleTimer=function(){if(tRun){clearInterval(tInt);tRun=false;document.getElementById('tt').textContent='\u25b6 CONTINUAR';}else{if(tSec===0)tSec=tTotal;tRun=true;document.getElementById('tt').textContent='\u23f8 PAUSAR';tInt=setInterval(function(){tSec--;updTD();if(tSec===10)beep(880,0.15);if(tSec===0){clearInterval(tInt);tRun=false;document.getElementById('tt').textContent='\u25b6 INICIAR';document.getElementById('td').className='timer-disp';beep(1320,0.1);setTimeout(function(){beep(1320,0.1);},200);setTimeout(function(){beep(1760,0.3);},400);try{navigator.vibrate([100,50,100,50,200]);}catch(e){}}},1000);}};
 window.resetTimer=function(){clearInterval(tInt);tRun=false;tSec=tTotal;document.getElementById('tt').textContent='\u25b6 INICIAR';updTD();};
 
 // TRAIN CARD + NOTES
@@ -1529,6 +1565,7 @@ window.toggleT=function(h){
   }
 };
 window.saveNote=function(tid){
+  try{navigator.vibrate(10);}catch(e){}
   var val=document.getElementById('note-'+tid).value;
   S.set('note_'+tid,val);
   var el=document.getElementById('saved-'+tid);
@@ -1539,6 +1576,7 @@ window.saveNote=function(tid){
 // EXERCISE — persiste estado no localStorage
 window.toggleEx=function(el){
   el.classList.toggle('done');
+  try{navigator.vibrate(el.classList.contains('done')?[15,10,15]:8);}catch(e){}
   var card=el.closest('.train-card');
   if(card&&card.dataset.tid){
     var exs=Array.from(card.querySelectorAll('.ex'));
@@ -1598,7 +1636,7 @@ window.markDone=function(e,id){
   var card=document.querySelector('[data-tid="'+id+'"]');
   var btn=e.currentTarget;
   if(done.has(id)){done.delete(id);card.classList.remove('completed');btn.classList.remove('checked');rmTrainDay();}
-  else{done.add(id);card.classList.add('completed');btn.classList.add('checked');beep(660,0.08);setTimeout(function(){beep(880,0.1);},100);addTrainDay();}
+  else{done.add(id);card.classList.add('completed');btn.classList.add('checked');beep(660,0.08);setTimeout(function(){beep(880,0.1);},100);try{navigator.vibrate([30,20,60]);}catch(e){}addTrainDay();}
   updCount();
 };
 function updCount(){
