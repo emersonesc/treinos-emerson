@@ -253,12 +253,16 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 .weight-add-btn{font-family:var(--mono);font-size:10px;font-weight:700;padding:10px 16px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;cursor:pointer;transition:background .15s;white-space:nowrap;}
 .weight-add-btn:hover{background:var(--accent2);}
 .weight-chart{position:relative;height:150px;margin-bottom:8px;}
-/* Carga por exercício */
-.ex-weight-row{margin-top:5px;}
-.ex-weight{font-family:var(--mono);font-size:10px;font-weight:700;padding:4px 10px;border-radius:100px;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);cursor:pointer;transition:all .15s;display:inline-block;}
-.ex-weight:hover,.ex-weight:active{border-color:var(--blue);color:var(--blue);background:var(--blue-dim);}
-.ex-weight.has-val{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(61,142,255,.3);}
-.ex-weight-inp{font-family:var(--mono);font-size:14px;background:var(--surface2);border:1px solid var(--blue);border-radius:8px;color:var(--text);padding:4px 10px;outline:none;width:90px;}
+/* Painel de cargas */
+.cargas-panel{border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:none;}
+.train-card.open .cargas-panel{display:block;}
+.cargas-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+.carga-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);}
+.carga-row:last-child{border-bottom:none;}
+.carga-nome{font-size:12px;color:var(--text2);flex:1;line-height:1.3;}
+.carga-inp{font-family:var(--mono);font-size:14px;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:6px 10px;outline:none;width:88px;text-align:center;transition:border-color .15s;}
+.carga-inp:focus{border-color:var(--blue);}
+.carga-inp.filled{border-color:rgba(61,142,255,.3);background:var(--blue-dim);color:var(--blue);}
 .wc-canvas{width:100%;height:100%;}
 .weight-entries{display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto;}
 .we-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:6px 10px;background:var(--surface2);border-radius:6px;}
@@ -1545,23 +1549,54 @@ window.setPreset=function(s,btn){tTotal=tSec=s;tRun=false;clearInterval(tInt);do
 window.toggleTimer=function(){if(tRun){clearInterval(tInt);tRun=false;document.getElementById('tt').textContent='\u25b6 CONTINUAR';}else{if(tSec===0)tSec=tTotal;tRun=true;document.getElementById('tt').textContent='\u23f8 PAUSAR';tInt=setInterval(function(){tSec--;updTD();if(tSec===10)beep(880,0.15);if(tSec===0){clearInterval(tInt);tRun=false;document.getElementById('tt').textContent='\u25b6 INICIAR';document.getElementById('td').className='timer-disp';beep(1320,0.1);setTimeout(function(){beep(1320,0.1);},200);setTimeout(function(){beep(1760,0.3);},400);try{navigator.vibrate([100,50,100,50,200]);}catch(e){}}},1000);}};
 window.resetTimer=function(){clearInterval(tInt);tRun=false;tSec=tTotal;document.getElementById('tt').textContent='\u25b6 INICIAR';updTD();};
 
-// TRAIN CARD + NOTES
+// TRAIN CARD + NOTAS + CARGAS
 window.toggleT=function(h){
   var card=h.closest('.train-card');
   card.classList.toggle('open');
   if(card.classList.contains('open')){
     var tid=card.dataset.tid;
     if(!tid)return;
-    injectWeights(card);
+    var tbody=card.querySelector('.t-body');
+    // Painel de cargas
+    if(!card.querySelector('.cargas-panel')){
+      var exNames=Array.from(card.querySelectorAll('.ex-name')).map(function(el){return el.textContent.trim();});
+      var cp=document.createElement('div');
+      cp.className='cargas-panel';
+      cp.innerHTML='<div class="cargas-label">\u2696\ufe0f Cargas do treino</div>';
+      exNames.forEach(function(nome,idx){
+        var key='exwt_'+tid+'_'+idx;
+        var val=S.get(key)||'';
+        var row=document.createElement('div');
+        row.className='carga-row';
+        var inp=document.createElement('input');
+        inp.className='carga-inp'+(val?' filled':'');
+        inp.type='text';inp.inputMode='decimal';
+        inp.placeholder='kg';
+        inp.value=val;
+        inp.dataset.key=key;
+        inp.addEventListener('input',function(){
+          inp.className='carga-inp'+(inp.value.trim()?' filled':'');
+        });
+        inp.addEventListener('change',function(){
+          S.set(key,inp.value.trim());
+          try{navigator.vibrate(10);}catch(e){}
+        });
+        row.innerHTML='<span class="carga-nome">'+nome+'</span>';
+        row.appendChild(inp);
+        cp.appendChild(row);
+      });
+      tbody.appendChild(cp);
+    }
+    // Painel de notas
     if(!card.querySelector('.notes-panel')){
       var saved=S.get('note_'+tid)||'';
       var panel=document.createElement('div');
       panel.className='notes-panel';
       panel.innerHTML='<div class="notes-label">\ud83d\udcdd Notas do treino</div>'
         +'<textarea class="notes-textarea" id="note-'+tid+'" placeholder="Ex: Supino 60kg 4x12 ok. Aumentar carga...">'+saved+'</textarea>'
-        +'<div class="notes-footer"><button class="notes-save-btn" onclick="saveNote(''+tid+'')">Salvar</button>'
+        +'<div class="notes-footer"><button class="notes-save-btn" onclick="saveNote(\''+tid+'\')">Salvar</button>'
         +'<span class="notes-saved" id="saved-'+tid+'">\u2713 Salvo!</span></div>';
-      card.querySelector('.t-body').appendChild(panel);
+      tbody.appendChild(panel);
     }
   }
 };
@@ -1594,44 +1629,6 @@ function restoreExStates(){
   });
 }
 
-// CARGA POR EXERCÍCIO
-function makeWeightBtn(key){
-  var val=S.get(key)||'';
-  var btn=document.createElement('button');
-  btn.className='ex-weight'+(val?' has-val':'');
-  btn.textContent=val||'+ registrar kg';
-  btn.onclick=function(e){
-    e.stopPropagation();
-    var inp=document.createElement('input');
-    inp.className='ex-weight-inp';
-    inp.value=S.get(key)||'';
-    inp.placeholder='ex: 20kg';
-    btn.replaceWith(inp);
-    inp.focus();inp.select();
-    inp.onblur=function(){
-      var v=inp.value.trim();
-      S.set(key,v);
-      btn.textContent=v||'+ registrar kg';
-      btn.className='ex-weight'+(v?' has-val':'');
-      inp.replaceWith(btn);
-    };
-    inp.onkeydown=function(ev){if(ev.key==='Enter'){ev.preventDefault();inp.blur();}};
-  };
-  return btn;
-}
-function injectWeights(card){
-  var tid=card.dataset.tid;
-  if(!tid)return;
-  card.querySelectorAll('.ex').forEach(function(ex,idx){
-    if(ex.querySelector('.ex-weight-row'))return;
-    var info=ex.querySelector('.ex-info');
-    if(!info)return;
-    var row=document.createElement('div');
-    row.className='ex-weight-row';
-    row.appendChild(makeWeightBtn('exwt_'+tid+'_'+idx));
-    info.appendChild(row);
-  });
-}
 
 // DONE / HISTORY
 var done=new Set();
@@ -1793,7 +1790,6 @@ updCount();
 renderCal();
 renderWeights();
 restoreExStates();
-document.querySelectorAll('.train-card[data-tid]').forEach(function(card){injectWeights(card);});
 document.querySelectorAll('.train-card,.bio-card,.score-card,.bio-stats-4,.weight-card,.calendar-card,.week-counter-card').forEach(function(el){el.classList.add('fade-in');});
 setTimeout(initFadeIn,200);
 </script>
