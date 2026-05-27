@@ -125,12 +125,23 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .month-content.active{display:block;animation:fadeSlide .25s ease;}
 @keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
+/* PRÓXIMO TREINO BANNER */
+.next-banner{display:none;background:linear-gradient(135deg,rgba(255,77,0,.12) 0%,rgba(255,77,0,.05) 100%);border:1px solid rgba(255,77,0,.3);border-radius:var(--r);padding:14px 18px;margin-bottom:14px;cursor:pointer;transition:all .2s;}
+.next-banner:active{opacity:.8;}
+.next-banner-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+.next-banner-num{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--text);display:inline;}
+.next-banner-name{font-size:14px;font-weight:700;color:var(--text);margin-top:2px;}
+.next-banner-focus{font-size:11px;color:var(--text3);margin-top:2px;}
+.next-banner-arrow{float:right;color:var(--accent);font-size:20px;line-height:1;margin-top:2px;}
+
 /* TRAIN CARD */
 .train-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;transition:border-color .2s;}
 .train-card.completed{border-color:rgba(0,217,126,.2);background:linear-gradient(135deg,var(--surface) 0%,rgba(0,217,126,.03) 100%);}
 .train-card.completed .t-num{color:var(--green);}
 .train-card.cardio-day{border-color:rgba(255,77,0,.15);background:linear-gradient(135deg,var(--surface) 0%,rgba(255,77,0,.03) 100%);}
 .train-card.rest-day{border-color:rgba(255,255,255,.04);}
+.train-card.next-up{border-color:rgba(255,77,0,.5);box-shadow:0 0 0 1px rgba(255,77,0,.15);}
+.train-card.next-up .t-num{color:var(--accent);}
 
 .t-header{display:flex;align-items:center;gap:14px;padding:16px 18px;cursor:pointer;user-select:none;position:relative;}
 .t-header::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:0;transition:opacity .2s;}
@@ -542,6 +553,13 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
   <div class="month-btn" onclick="selectMonth(2)"><div class="mb-num">M2</div><div class="mb-lbl">Progressão</div></div>
   <div class="month-btn" onclick="selectMonth(3)"><div class="mb-num">M3</div><div class="mb-lbl">Intensidade</div></div>
   <div class="month-btn" onclick="selectMonth(4)"><div class="mb-num">M4</div><div class="mb-lbl">Força</div></div>
+</div>
+<div class="next-banner" id="next-banner" onclick="goToNextTraining()">
+  <div class="next-banner-arrow">›</div>
+  <div class="next-banner-label">Próximo treino</div>
+  <div><span class="next-banner-num" id="nb-num">—</span></div>
+  <div class="next-banner-name" id="nb-name"></div>
+  <div class="next-banner-focus" id="nb-focus"></div>
 </div>
 <div class="week-status">
   <div class="ws-label" id="ws-label">Treinos em andamento</div>
@@ -1630,6 +1648,57 @@ function restoreExStates(){
 }
 
 
+// PRÓXIMO TREINO
+function getAllTids(){
+  return Array.from(document.querySelectorAll('.train-card[data-tid]')).map(function(c){return c.dataset.tid;});
+}
+function getCardMeta(tid){
+  var card=document.querySelector('[data-tid="'+tid+'"]');
+  if(!card)return null;
+  return{
+    num:card.querySelector('.t-num')&&card.querySelector('.t-num').textContent,
+    name:card.querySelector('.t-name')&&card.querySelector('.t-name').textContent,
+    focus:card.querySelector('.t-focus')&&card.querySelector('.t-focus').textContent,
+    month:parseInt(tid.split('-')[0].replace('m',''),10)
+  };
+}
+function updateNextBanner(){
+  document.querySelectorAll('.train-card.next-up').forEach(function(c){c.classList.remove('next-up');});
+  var banner=document.getElementById('next-banner');
+  if(!banner)return;
+  var last=S.get('last_done_tid');
+  var tids=getAllTids().filter(function(t){var c=document.querySelector('[data-tid="'+t+'"]');return c&&!c.classList.contains('rest-day');});
+  var nextTid;
+  if(!last){
+    nextTid=tids[0];
+  } else {
+    var idx=tids.indexOf(last);
+    nextTid=idx>=0&&idx<tids.length-1?tids[idx+1]:tids[0];
+  }
+  if(!nextTid){banner.style.display='none';return;}
+  var meta=getCardMeta(nextTid);
+  if(!meta){banner.style.display='none';return;}
+  document.getElementById('nb-num').textContent=meta.num;
+  document.getElementById('nb-name').textContent=meta.name||'';
+  document.getElementById('nb-focus').textContent=meta.focus||'';
+  banner.style.display='block';
+  banner.dataset.nextTid=nextTid;
+  var card=document.querySelector('[data-tid="'+nextTid+'"]');
+  if(card)card.classList.add('next-up');
+}
+window.goToNextTraining=function(){
+  var banner=document.getElementById('next-banner');
+  if(!banner)return;
+  var tid=banner.dataset.nextTid;
+  if(!tid)return;
+  var m=parseInt(tid.split('-')[0].replace('m',''),10);
+  selectMonth(m);
+  var card=document.querySelector('[data-tid="'+tid+'"]');
+  if(card){
+    setTimeout(function(){card.scrollIntoView({behavior:'smooth',block:'center'});},80);
+  }
+};
+
 // DONE / HISTORY
 var done=new Set();
 var curM=1;
@@ -1638,8 +1707,9 @@ window.markDone=function(e,id){
   var card=document.querySelector('[data-tid="'+id+'"]');
   var btn=e.currentTarget;
   if(done.has(id)){done.delete(id);card.classList.remove('completed');btn.classList.remove('checked');rmTrainDay();}
-  else{done.add(id);card.classList.add('completed');btn.classList.add('checked');beep(660,0.08);setTimeout(function(){beep(880,0.1);},100);try{navigator.vibrate([30,20,60]);}catch(e){}addTrainDay();}
+  else{done.add(id);card.classList.add('completed');btn.classList.add('checked');beep(660,0.08);setTimeout(function(){beep(880,0.1);},100);try{navigator.vibrate([30,20,60]);}catch(e){}addTrainDay();S.set('last_done_tid',id);}
   updCount();
+  updateNextBanner();
 };
 function updCount(){
   var p='m'+curM+'-';
@@ -1790,6 +1860,7 @@ updCount();
 renderCal();
 renderWeights();
 restoreExStates();
+updateNextBanner();
 document.querySelectorAll('.train-card,.bio-card,.score-card,.bio-stats-4,.weight-card,.calendar-card,.week-counter-card').forEach(function(el){el.classList.add('fade-in');});
 setTimeout(initFadeIn,200);
 </script>
