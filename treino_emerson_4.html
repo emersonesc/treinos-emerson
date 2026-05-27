@@ -1688,7 +1688,7 @@ function renderCal(){
     var cls='cal-day';
     if(ds===todayStr)cls+=' today';
     if(trained.includes(ds))cls+=' trained';
-    html+='<div class="'+cls+'" onclick="toggleCalDay(''+ds+'')">'+day+'</div>';
+    html+='<div class="'+cls+'" onclick="toggleCalDay(\''+ds+'\')">'+day+'</div>';
   }
   var rem=(7-((first+last)%7))%7;
   for(var i=1;i<=rem;i++)html+='<div class="cal-day other-month">'+i+'</div>';
