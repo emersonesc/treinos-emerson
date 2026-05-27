@@ -251,7 +251,12 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 .weight-input:focus{border-color:var(--accent);}
 .weight-add-btn{font-family:var(--mono);font-size:10px;font-weight:700;padding:10px 16px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;cursor:pointer;transition:background .15s;white-space:nowrap;}
 .weight-add-btn:hover{background:var(--accent2);}
-.weight-chart{position:relative;height:120px;margin-bottom:8px;}
+.weight-chart{position:relative;height:150px;margin-bottom:8px;}
+/* Carga por exercício */
+.ex-weight{font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 8px;border-radius:100px;white-space:nowrap;flex-shrink:0;background:var(--surface3);color:var(--text3);border:1px solid var(--border);cursor:pointer;transition:all .15s;margin-left:2px;}
+.ex-weight:hover{border-color:var(--blue);color:var(--blue);}
+.ex-weight.has-val{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(61,142,255,.2);}
+.ex-weight-inp{width:72px;font-family:var(--mono);font-size:12px;background:var(--surface3);border:1px solid var(--blue);border-radius:6px;color:var(--text);padding:3px 8px;outline:none;flex-shrink:0;}
 .wc-canvas{width:100%;height:100%;}
 .weight-entries{display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto;}
 .we-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:6px 10px;background:var(--surface2);border-radius:6px;}
@@ -1507,17 +1512,20 @@ window.resetTimer=function(){clearInterval(tInt);tRun=false;tSec=tTotal;document
 window.toggleT=function(h){
   var card=h.closest('.train-card');
   card.classList.toggle('open');
-  if(card.classList.contains('open')&&!card.querySelector('.notes-panel')){
+  if(card.classList.contains('open')){
     var tid=card.dataset.tid;
     if(!tid)return;
-    var saved=S.get('note_'+tid)||'';
-    var panel=document.createElement('div');
-    panel.className='notes-panel';
-    panel.innerHTML='<div class="notes-label">\ud83d\udcdd Notas do treino</div>'
-      +'<textarea class="notes-textarea" id="note-'+tid+'" placeholder="Ex: Supino 60kg 4x12 ok. Aumentar carga...">'+saved+'</textarea>'
-      +'<div class="notes-footer"><button class="notes-save-btn" onclick="saveNote(''+tid+'')">Salvar</button>'
-      +'<span class="notes-saved" id="saved-'+tid+'">\u2713 Salvo!</span></div>';
-    card.querySelector('.t-body').appendChild(panel);
+    injectWeights(card);
+    if(!card.querySelector('.notes-panel')){
+      var saved=S.get('note_'+tid)||'';
+      var panel=document.createElement('div');
+      panel.className='notes-panel';
+      panel.innerHTML='<div class="notes-label">\ud83d\udcdd Notas do treino</div>'
+        +'<textarea class="notes-textarea" id="note-'+tid+'" placeholder="Ex: Supino 60kg 4x12 ok. Aumentar carga...">'+saved+'</textarea>'
+        +'<div class="notes-footer"><button class="notes-save-btn" onclick="saveNote(''+tid+'')">Salvar</button>'
+        +'<span class="notes-saved" id="saved-'+tid+'">\u2713 Salvo!</span></div>';
+      card.querySelector('.t-body').appendChild(panel);
+    }
   }
 };
 window.saveNote=function(tid){
@@ -1528,8 +1536,59 @@ window.saveNote=function(tid){
   setTimeout(function(){el.classList.remove('show');},2000);
 };
 
-// EXERCISE
-window.toggleEx=function(el){el.classList.toggle('done');};
+// EXERCISE — persiste estado no localStorage
+window.toggleEx=function(el){
+  el.classList.toggle('done');
+  var card=el.closest('.train-card');
+  if(card&&card.dataset.tid){
+    var exs=Array.from(card.querySelectorAll('.ex'));
+    var idx=exs.indexOf(el);
+    if(idx>=0)S.set('exdone_'+card.dataset.tid+'_'+idx, el.classList.contains('done'));
+  }
+};
+function restoreExStates(){
+  document.querySelectorAll('.train-card[data-tid]').forEach(function(card){
+    var tid=card.dataset.tid;
+    card.querySelectorAll('.ex').forEach(function(ex,idx){
+      if(S.get('exdone_'+tid+'_'+idx))ex.classList.add('done');
+    });
+  });
+}
+
+// CARGA POR EXERCÍCIO
+function injectWeights(card){
+  var tid=card.dataset.tid;
+  if(!tid)return;
+  card.querySelectorAll('.ex').forEach(function(ex,idx){
+    if(ex.querySelector('.ex-weight,.ex-weight-inp'))return;
+    var key='exwt_'+tid+'_'+idx;
+    var val=S.get(key)||'';
+    var btn=document.createElement('button');
+    btn.className='ex-weight'+(val?' has-val':'');
+    btn.textContent=val||'⚖';
+    btn.title='Registrar carga';
+    btn.onclick=function(e){
+      e.stopPropagation();
+      var inp=document.createElement('input');
+      inp.className='ex-weight-inp';
+      inp.value=S.get(key)||'';
+      inp.placeholder='ex: 20kg';
+      btn.replaceWith(inp);
+      inp.focus();inp.select();
+      function commit(){
+        var v=inp.value.trim();
+        S.set(key,v);
+        btn.textContent=v||'⚖';
+        btn.className='ex-weight'+(v?' has-val':'');
+        inp.replaceWith(btn);
+      }
+      inp.onblur=commit;
+      inp.onkeydown=function(ev){if(ev.key==='Enter'){ev.preventDefault();inp.blur();}};
+    };
+    var badge=ex.querySelector('.ex-badge');
+    if(badge)badge.before(btn);else ex.appendChild(btn);
+  });
+}
 
 // DONE / HISTORY
 var done=new Set();
@@ -1631,23 +1690,58 @@ function drawWChart(wts){
   var canvas=document.getElementById('w-chart');
   if(!canvas)return;
   var ctx=canvas.getContext('2d');
-  var W=canvas.offsetWidth||320,H=120;
+  var W=canvas.offsetWidth||320,H=150;
   var dpr=window.devicePixelRatio||1;
   canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.height=H+'px';
   ctx.scale(dpr,dpr);ctx.clearRect(0,0,W,H);
   if(wts.length<2){ctx.fillStyle='rgba(255,255,255,0.15)';ctx.font='11px monospace';ctx.textAlign='center';ctx.fillText('Adicione mais registros para ver o gráfico',W/2,H/2);return;}
   var vals=wts.map(function(w){return w.val;});
-  var mn=Math.min.apply(null,vals)-1,mx=Math.max.apply(null,vals)+1;
-  var p={l:8,r:8,t:14,b:8};var gW=W-p.l-p.r,gH=H-p.t-p.b;
+  var mn=Math.min.apply(null,vals)-1.5,mx=Math.max.apply(null,vals)+1.5;
+  var p={l:10,r:10,t:22,b:10};var gW=W-p.l-p.r,gH=H-p.t-p.b;
   var xS=gW/(wts.length-1);
   var yS=function(v){return p.t+gH-(((v-mn)/(mx-mn))*gH);};
-  if(70.3>=mn&&70.3<=mx){var gy=yS(70.3);ctx.setLineDash([4,3]);ctx.strokeStyle='rgba(0,217,126,0.4)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(p.l,gy);ctx.lineTo(W-p.r,gy);ctx.stroke();ctx.fillStyle='rgba(0,217,126,0.6)';ctx.font='9px monospace';ctx.textAlign='right';ctx.fillText('Meta 70,3',W-p.r,gy-3);ctx.setLineDash([]);}
-  var grad=ctx.createLinearGradient(0,p.t,0,H);grad.addColorStop(0,'rgba(255,77,0,0.35)');grad.addColorStop(1,'rgba(255,77,0,0)');
+  var minIdx=vals.indexOf(Math.min.apply(null,vals));
+  var maxIdx=vals.indexOf(Math.max.apply(null,vals));
+
+  // Linha de meta
+  if(70.3>=mn&&70.3<=mx){var gy=yS(70.3);ctx.setLineDash([4,3]);ctx.strokeStyle='rgba(0,217,126,0.5)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(p.l,gy);ctx.lineTo(W-p.r,gy);ctx.stroke();ctx.fillStyle='rgba(0,217,126,0.7)';ctx.font='bold 9px monospace';ctx.textAlign='right';ctx.fillText('Meta 70,3kg',W-p.r,gy-3);ctx.setLineDash([]);}
+
+  // Linha de tendência (regressão linear)
+  if(wts.length>=3){
+    var n=wts.length,sX=0,sY=0,sXY=0,sXX=0;
+    wts.forEach(function(w,i){sX+=i;sY+=w.val;sXY+=i*w.val;sXX+=i*i;});
+    var sl=(n*sXY-sX*sY)/(n*sXX-sX*sX);
+    var ic=(sY-sl*sX)/n;
+    ctx.setLineDash([5,4]);ctx.strokeStyle='rgba(61,142,255,0.55)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(p.l,yS(ic));ctx.lineTo(p.l+gW,yS(sl*(n-1)+ic));ctx.stroke();ctx.setLineDash([]);
+    var diff=sl*(n-1);
+    ctx.fillStyle=diff<0?'rgba(0,217,126,0.85)':'rgba(255,77,0,0.85)';
+    ctx.font='bold 9px monospace';ctx.textAlign='left';
+    ctx.fillText((diff<0?'▼ ':'▲ ')+Math.abs(diff).toFixed(1)+'kg tendência',p.l+2,p.t-7);
+  }
+
+  // Área preenchida
+  var grad=ctx.createLinearGradient(0,p.t,0,H);grad.addColorStop(0,'rgba(255,77,0,0.3)');grad.addColorStop(1,'rgba(255,77,0,0)');
   ctx.beginPath();wts.forEach(function(w,i){var x=p.l+i*xS,y=yS(w.val);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
   ctx.lineTo(p.l+(wts.length-1)*xS,H-p.b);ctx.lineTo(p.l,H-p.b);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+
+  // Linha principal
   ctx.beginPath();wts.forEach(function(w,i){var x=p.l+i*xS,y=yS(w.val);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-  ctx.strokeStyle='#FF4D00';ctx.lineWidth=2;ctx.lineJoin='round';ctx.stroke();
-  wts.forEach(function(w,i){var x=p.l+i*xS,y=yS(w.val);ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fillStyle='#FF4D00';ctx.fill();if(i===0||i===wts.length-1||wts.length<=8){ctx.fillStyle='rgba(255,255,255,0.75)';ctx.font='9px monospace';ctx.textAlign='center';ctx.fillText(w.val.toFixed(1),x,y-7);}});
+  ctx.strokeStyle='#FF4D00';ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();
+
+  // Pontos e labels
+  wts.forEach(function(w,i){
+    var x=p.l+i*xS,y=yS(w.val);
+    var isSpec=i===0||i===wts.length-1||i===minIdx||i===maxIdx||wts.length<=8;
+    var col=i===minIdx?'#00D97E':'#FF4D00';
+    ctx.beginPath();ctx.arc(x,y,isSpec?4.5:2.5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+    if(isSpec){
+      ctx.fillStyle=i===minIdx?'rgba(0,217,126,0.95)':'rgba(255,255,255,0.9)';
+      ctx.font='bold 9px monospace';ctx.textAlign='center';
+      ctx.fillText(w.val.toFixed(1),x,y-8);
+    }
+  });
 }
 
 // INIT
@@ -1655,6 +1749,7 @@ updTD();
 updCount();
 renderCal();
 renderWeights();
+restoreExStates();
 document.querySelectorAll('.train-card,.bio-card,.score-card,.bio-stats-4,.weight-card,.calendar-card,.week-counter-card').forEach(function(el){el.classList.add('fade-in');});
 setTimeout(initFadeIn,200);
 </script>
