@@ -254,10 +254,11 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 .weight-add-btn:hover{background:var(--accent2);}
 .weight-chart{position:relative;height:150px;margin-bottom:8px;}
 /* Carga por exercício */
-.ex-weight{font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 10px;border-radius:100px;white-space:nowrap;flex-shrink:0;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);cursor:pointer;transition:all .15s;}
+.ex-weight-row{margin-top:5px;}
+.ex-weight{font-family:var(--mono);font-size:10px;font-weight:700;padding:4px 10px;border-radius:100px;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);cursor:pointer;transition:all .15s;display:inline-block;}
 .ex-weight:hover,.ex-weight:active{border-color:var(--blue);color:var(--blue);background:var(--blue-dim);}
 .ex-weight.has-val{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(61,142,255,.3);}
-.ex-weight-inp{width:80px;font-family:var(--mono);font-size:14px;background:var(--surface2);border:1px solid var(--blue);border-radius:8px;color:var(--text);padding:5px 10px;outline:none;flex-shrink:0;}
+.ex-weight-inp{font-family:var(--mono);font-size:14px;background:var(--surface2);border:1px solid var(--blue);border-radius:8px;color:var(--text);padding:4px 10px;outline:none;width:90px;}
 .wc-canvas{width:100%;height:100%;}
 .weight-entries{display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto;}
 .we-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:6px 10px;background:var(--surface2);border-radius:6px;}
@@ -1594,37 +1595,41 @@ function restoreExStates(){
 }
 
 // CARGA POR EXERCÍCIO
+function makeWeightBtn(key){
+  var val=S.get(key)||'';
+  var btn=document.createElement('button');
+  btn.className='ex-weight'+(val?' has-val':'');
+  btn.textContent=val||'+ registrar kg';
+  btn.onclick=function(e){
+    e.stopPropagation();
+    var inp=document.createElement('input');
+    inp.className='ex-weight-inp';
+    inp.value=S.get(key)||'';
+    inp.placeholder='ex: 20kg';
+    btn.replaceWith(inp);
+    inp.focus();inp.select();
+    inp.onblur=function(){
+      var v=inp.value.trim();
+      S.set(key,v);
+      btn.textContent=v||'+ registrar kg';
+      btn.className='ex-weight'+(v?' has-val':'');
+      inp.replaceWith(btn);
+    };
+    inp.onkeydown=function(ev){if(ev.key==='Enter'){ev.preventDefault();inp.blur();}};
+  };
+  return btn;
+}
 function injectWeights(card){
   var tid=card.dataset.tid;
   if(!tid)return;
   card.querySelectorAll('.ex').forEach(function(ex,idx){
-    if(ex.querySelector('.ex-weight,.ex-weight-inp'))return;
-    var key='exwt_'+tid+'_'+idx;
-    var val=S.get(key)||'';
-    var btn=document.createElement('button');
-    btn.className='ex-weight'+(val?' has-val':'');
-    btn.textContent=val||'+ kg';
-    btn.title='Registrar carga';
-    btn.onclick=function(e){
-      e.stopPropagation();
-      var inp=document.createElement('input');
-      inp.className='ex-weight-inp';
-      inp.value=S.get(key)||'';
-      inp.placeholder='ex: 20kg';
-      btn.replaceWith(inp);
-      inp.focus();inp.select();
-      function commit(){
-        var v=inp.value.trim();
-        S.set(key,v);
-        btn.textContent=v||'+ kg';
-        btn.className='ex-weight'+(v?' has-val':'');
-        inp.replaceWith(btn);
-      }
-      inp.onblur=commit;
-      inp.onkeydown=function(ev){if(ev.key==='Enter'){ev.preventDefault();inp.blur();}};
-    };
-    var badge=ex.querySelector('.ex-badge');
-    if(badge)badge.before(btn);else ex.appendChild(btn);
+    if(ex.querySelector('.ex-weight-row'))return;
+    var info=ex.querySelector('.ex-info');
+    if(!info)return;
+    var row=document.createElement('div');
+    row.className='ex-weight-row';
+    row.appendChild(makeWeightBtn('exwt_'+tid+'_'+idx));
+    info.appendChild(row);
   });
 }
 
