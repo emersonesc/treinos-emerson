@@ -502,7 +502,6 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
       <button class="nav-tab active" onclick="showSection('treinos')">💪 Treinos</button>
       <button class="nav-tab" onclick="showSection('bio')">📊 Bioimpedância</button>
     </div>
-    <div class="nav-week">Semana <span id="nav-week-num">—</span></div>
   </div>
 </nav>
 
@@ -1143,15 +1142,6 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 
 </div>
 
-<!-- SEMANA COUNTER + CALENDAR + PESO (dentro da seção treinos) -->
-<div class="week-counter-card fade-in">
-  <div class="wc-icon">📅</div>
-  <div class="wc-info">
-    <div class="wc-title" id="wc-title">Calculando semana...</div>
-    <div class="wc-sub" id="wc-sub">Início do plano: 28/01/2026</div>
-  </div>
-  <div class="wc-badge" id="wc-badge">S—</div>
-</div>
 
 <div class="calendar-card fade-in">
   <div class="cal-header">
@@ -1545,17 +1535,6 @@ var d=new Date();
 var el=document.getElementById('today-date');
 if(el)el.textContent=d.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
 
-// SEMANA
-(function(){
-  var start=new Date('2026-01-28');
-  var today=new Date();
-  var diff=Math.floor((today-start)/(7*24*3600*1000));
-  var week=Math.max(1,Math.min(diff+1,16));
-  var wb=document.getElementById('wc-badge');if(wb)wb.textContent='S'+week;
-  var wn=document.getElementById('nav-week-num');if(wn)wn.textContent=week;
-  var wt=document.getElementById('wc-title');if(wt)wt.textContent='Semana '+week+' de 16';
-  var ws=document.getElementById('wc-sub');if(ws)ws.textContent='Início: 28/01/2026 · '+Math.round((week/16)*100)+'% do plano concluído';
-})();
 
 // TIMER
 var tSec=60,tTotal=60,tRun=false,tInt=null,aCtx=null;
