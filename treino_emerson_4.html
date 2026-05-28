@@ -1646,13 +1646,16 @@ function updateNextBanner(){
   var banner=document.getElementById('next-banner');
   if(!banner)return;
   var last=S.get('last_done_tid');
-  var tids=getAllTids().filter(function(t){var c=document.querySelector('[data-tid="'+t+'"]');return c&&!c.classList.contains('rest-day');});
+  // Só considera treinos do mesociclo ativo
+  var prefix='m'+curM+'-';
+  var tids=getAllTids().filter(function(t){var c=document.querySelector('[data-tid="'+t+'"]');return c&&!c.classList.contains('rest-day')&&t.startsWith(prefix);});
   var nextTid;
-  if(!last){
+  if(!last||!last.startsWith(prefix)){
     nextTid=tids[0];
   } else {
     var idx=tids.indexOf(last);
-    nextTid=idx>=0&&idx<tids.length-1?tids[idx+1]:tids[0];
+    // Ao terminar o último, volta pro primeiro (loop dentro do mês)
+    nextTid=idx>=0?tids[(idx+1)%tids.length]:tids[0];
   }
   if(!nextTid){banner.style.display='none';return;}
   var meta=getCardMeta(nextTid);
@@ -1708,6 +1711,7 @@ window.selectMonth=function(n){
   if(mc)mc.classList.add('active');
   document.querySelectorAll('.month-btn')[n-1].classList.add('active');
   updCount();
+  updateNextBanner();
 };
 
 // CALENDAR
