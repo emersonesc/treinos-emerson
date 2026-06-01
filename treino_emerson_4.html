@@ -488,8 +488,36 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
   .calendar-card{padding:18px 16px;}
 }
 
+/* SYNC */
+.sync-icon-btn{background:transparent;border:none;cursor:pointer;padding:6px 8px;border-radius:8px;font-size:16px;color:var(--text3);transition:all .2s;display:flex;align-items:center;gap:5px;}
+.sync-icon-btn:hover{background:var(--surface3);color:var(--text);}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);flex-shrink:0;transition:background .3s;}
+.sync-dot.ok{background:var(--green);}
+.sync-dot.error{background:var(--yellow);}
+.sync-dot.syncing{background:var(--accent);animation:pulse .8s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.sync-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;}
+.sync-overlay.open{display:block;}
+.sync-panel{position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-bottom:none;border-radius:20px 20px 0 0;padding:24px 20px 48px;z-index:201;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+.sync-panel.open{transform:translateY(0);}
+.sync-panel-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 20px;}
+.sync-panel-title{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-bottom:4px;}
+.sync-panel-sub{font-size:12px;color:var(--text3);margin-bottom:20px;line-height:1.5;}
+.sync-field-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;margin-top:14px;}
+.sync-inp{width:100%;font-family:var(--mono);font-size:12px;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:10px 12px;outline:none;box-sizing:border-box;transition:border-color .15s;}
+.sync-inp:focus{border-color:var(--blue);}
+.sync-row{display:flex;gap:6px;align-items:center;}
+.sync-row .sync-inp{flex:1;}
+.sync-copy{font-family:var(--mono);font-size:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;white-space:nowrap;transition:all .15s;}
+.sync-copy:hover{border-color:var(--blue);color:var(--blue);}
+.sync-copy.copied{border-color:var(--green);color:var(--green);}
+.sync-actions{display:flex;gap:8px;margin-top:18px;}
+.sync-btn{flex:1;font-family:var(--mono);font-size:11px;font-weight:700;padding:11px 8px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;letter-spacing:.5px;transition:all .15s;}
+.sync-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.sync-btn:hover:not(.primary){background:var(--surface3);}
+.sync-last{font-size:11px;color:var(--text3);margin-top:14px;text-align:center;}
+
 </style>
-</head>
 <body>
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
@@ -502,8 +530,29 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
       <button class="nav-tab active" onclick="showSection('treinos')">💪 Treinos</button>
       <button class="nav-tab" onclick="showSection('bio')">📊 Bioimpedância</button>
     </div>
+    <button class="sync-icon-btn" onclick="toggleSyncPanel()" title="Sincronização">☁️<span class="sync-dot" id="sync-dot"></span></button>
   </div>
 </nav>
+
+<!-- SYNC PANEL -->
+<div class="sync-overlay" id="sync-overlay" onclick="toggleSyncPanel()"></div>
+<div class="sync-panel" id="sync-panel">
+  <div class="sync-panel-handle"></div>
+  <div class="sync-panel-title">☁️ Sincronização</div>
+  <div class="sync-panel-sub">Entre com a mesma API Key em qualquer dispositivo para sincronizar seus dados automaticamente.</div>
+  <div class="sync-field-lbl">API Key (JSONBin)</div>
+  <input type="password" id="sync-api-key" class="sync-inp" placeholder="$2b$10$..." autocomplete="off" />
+  <div class="sync-field-lbl">Bin ID <span style="color:var(--text3);font-size:9px">(gerado automaticamente)</span></div>
+  <div class="sync-row">
+    <input type="text" id="sync-bin-id" class="sync-inp" placeholder="Será criado no primeiro sync" />
+    <button class="sync-copy" id="copy-bin-btn" onclick="copyBinId()">Copiar</button>
+  </div>
+  <div class="sync-actions">
+    <button class="sync-btn primary" onclick="syncSaveAndPush()">Salvar e Sincronizar</button>
+    <button class="sync-btn" onclick="syncForcePull()">Baixar da nuvem</button>
+  </div>
+  <div class="sync-last" id="sync-last"></div>
+</div>
 
 <!-- BOTTOM NAV (mobile) -->
 <nav class="bottom-nav">
@@ -1577,6 +1626,7 @@ window.toggleT=function(h){
         inp.addEventListener('change',function(){
           S.set(key,inp.value.trim());
           try{navigator.vibrate(10);}catch(e){}
+          jbSchedule();
         });
         row.innerHTML='<span class="carga-nome">'+nome+'</span>';
         row.appendChild(inp);
@@ -1604,6 +1654,7 @@ window.saveNote=function(tid){
   var el=document.getElementById('saved-'+tid);
   el.classList.add('show');
   setTimeout(function(){el.classList.remove('show');},2000);
+  jbSchedule();
 };
 
 // EXERCISE — persiste estado no localStorage
@@ -1692,6 +1743,7 @@ window.markDone=function(e,id){
   else{done.add(id);card.classList.add('completed');btn.classList.add('checked');beep(660,0.08);setTimeout(function(){beep(880,0.1);},100);try{navigator.vibrate([30,20,60]);}catch(e){}addTrainDay();S.set('last_done_tid',id);}
   updCount();
   updateNextBanner();
+  jbSchedule();
 };
 function updCount(){
   var p='m'+curM+'-';
@@ -1760,9 +1812,9 @@ window.addWeight=function(){
   var wts=getWts();
   wts.unshift({date:new Date().toISOString().split('T')[0],val:val});
   if(wts.length>60)wts.length=60;
-  S.set('weights',wts);inp.value='';renderWeights();
+  S.set('weights',wts);inp.value='';renderWeights();jbSchedule();
 };
-window.delWeight=function(i){var wts=getWts();wts.splice(i,1);S.set('weights',wts);renderWeights();};
+window.delWeight=function(i){var wts=getWts();wts.splice(i,1);S.set('weights',wts);renderWeights();jbSchedule();};
 function renderWeights(){
   var wts=getWts();
   var cur=document.getElementById('w-current');
@@ -1837,6 +1889,159 @@ function drawWChart(wts){
   });
 }
 
+// ===== JSONBIN SYNC =====
+var JBIN='https://api.jsonbin.io/v3';
+var jbKey=localStorage.getItem('jbin_key')||'';
+var jbBin=localStorage.getItem('jbin_bin')||'';
+var jbTimer=null;
+
+function jbSetDot(s){
+  var d=document.getElementById('sync-dot');
+  if(!d)return;
+  d.className='sync-dot'+(s?' '+s:'');
+}
+function jbSetLast(msg){
+  var el=document.getElementById('sync-last');
+  if(el)el.textContent=msg||'';
+}
+function jbCollect(){
+  var d={ts:Date.now(),v:1,cargas:{},notes:{}};
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    if(!k)continue;
+    if(k.startsWith('exwt_'))d.cargas[k]=localStorage.getItem(k);
+    else if(k.startsWith('note_'))d.notes[k]=localStorage.getItem(k);
+  }
+  var ltd=localStorage.getItem('last_done_tid');if(ltd)d.last_done_tid=ltd;
+  d.trained_days=S.get('trained_days')||[];
+  d.weights=S.get('weights')||[];
+  return d;
+}
+function jbApply(d){
+  if(!d||!d.ts)return false;
+  var localTs=parseInt(localStorage.getItem('sync_ts')||'0');
+  if(d.ts<=localTs)return false;
+  if(d.cargas)Object.keys(d.cargas).forEach(function(k){localStorage.setItem(k,d.cargas[k]);});
+  if(d.notes)Object.keys(d.notes).forEach(function(k){localStorage.setItem(k,d.notes[k]);});
+  if(d.last_done_tid)localStorage.setItem('last_done_tid',d.last_done_tid);
+  if(d.trained_days)S.set('trained_days',d.trained_days);
+  if(d.weights)S.set('weights',d.weights);
+  localStorage.setItem('sync_ts',String(d.ts));
+  return true;
+}
+function jbRerender(){
+  restoreExStates();
+  updateNextBanner();
+  renderCal();
+  renderWeights();
+  // reload carga panels já abertos
+  document.querySelectorAll('.train-card.open').forEach(function(c){
+    var cp=c.querySelector('.cargas-panel');
+    if(cp){
+      var tid=c.dataset.tid;
+      c.querySelectorAll('.carga-inp').forEach(function(inp,idx){
+        var val=localStorage.getItem('exwt_'+tid+'_'+idx)||'';
+        inp.value=val;
+        inp.className='carga-inp'+(val?' filled':'');
+      });
+    }
+    var np=c.querySelector('.notes-textarea');
+    if(np){
+      var saved=localStorage.getItem('note_'+c.dataset.tid)||'';
+      np.value=saved;
+    }
+  });
+}
+async function jbPush(){
+  if(!jbKey)return;
+  jbSetDot('syncing');
+  try{
+    var data=jbCollect();
+    if(!jbBin){
+      var r=await fetch(JBIN+'/b',{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':jbKey,'X-Bin-Name':'treinos-emerson','X-Bin-Private':'true'},body:JSON.stringify(data)});
+      if(!r.ok)throw new Error(r.status);
+      var j=await r.json();
+      if(j.metadata&&j.metadata.id){
+        jbBin=j.metadata.id;
+        localStorage.setItem('jbin_bin',jbBin);
+        var binEl=document.getElementById('sync-bin-id');
+        if(binEl)binEl.value=jbBin;
+      }
+    }else{
+      var r2=await fetch(JBIN+'/b/'+jbBin,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':jbKey},body:JSON.stringify(data)});
+      if(!r2.ok)throw new Error(r2.status);
+    }
+    localStorage.setItem('sync_ts',String(data.ts));
+    jbSetDot('ok');
+    jbSetLast('Sincronizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){
+    jbSetDot('error');
+    jbSetLast('Erro ao sincronizar');
+  }
+}
+async function jbPull(){
+  if(!jbKey||!jbBin)return;
+  jbSetDot('syncing');
+  try{
+    var r=await fetch(JBIN+'/b/'+jbBin+'/latest',{headers:{'X-Master-Key':jbKey}});
+    if(!r.ok)throw new Error(r.status);
+    var j=await r.json();
+    var applied=jbApply(j.record);
+    if(applied)jbRerender();
+    jbSetDot('ok');
+    jbSetLast((applied?'Dados atualizados':'Já está em dia')+' · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){
+    jbSetDot('error');
+    jbSetLast('Erro ao buscar dados');
+  }
+}
+function jbSchedule(){
+  clearTimeout(jbTimer);
+  jbTimer=setTimeout(jbPush,3000);
+}
+window.toggleSyncPanel=function(){
+  var panel=document.getElementById('sync-panel');
+  var overlay=document.getElementById('sync-overlay');
+  var open=panel.classList.contains('open');
+  if(!open){
+    var keyEl=document.getElementById('sync-api-key');
+    var binEl=document.getElementById('sync-bin-id');
+    if(keyEl)keyEl.value=jbKey;
+    if(binEl)binEl.value=jbBin;
+  }
+  panel.classList.toggle('open');
+  overlay.classList.toggle('open');
+};
+window.syncSaveAndPush=function(){
+  var keyEl=document.getElementById('sync-api-key');
+  var binEl=document.getElementById('sync-bin-id');
+  var k=(keyEl?keyEl.value.trim():'');
+  var b=(binEl?binEl.value.trim():'');
+  if(k){jbKey=k;localStorage.setItem('jbin_key',k);}
+  if(b){jbBin=b;localStorage.setItem('jbin_bin',b);}
+  toggleSyncPanel();
+  jbPush();
+};
+window.syncForcePull=function(){
+  var keyEl=document.getElementById('sync-api-key');
+  var binEl=document.getElementById('sync-bin-id');
+  var k=(keyEl?keyEl.value.trim():'');
+  var b=(binEl?binEl.value.trim():'');
+  if(k){jbKey=k;localStorage.setItem('jbin_key',k);}
+  if(b){jbBin=b;localStorage.setItem('jbin_bin',b);}
+  toggleSyncPanel();
+  jbPull();
+};
+window.copyBinId=function(){
+  var binEl=document.getElementById('sync-bin-id');
+  var btn=document.getElementById('copy-bin-btn');
+  if(!binEl||!binEl.value)return;
+  navigator.clipboard.writeText(binEl.value).then(function(){
+    if(btn){btn.textContent='Copiado!';btn.className='sync-copy copied';}
+    setTimeout(function(){if(btn){btn.textContent='Copiar';btn.className='sync-copy';}},2000);
+  });
+};
+
 // INIT
 updTD();
 updCount();
@@ -1844,6 +2049,7 @@ renderCal();
 renderWeights();
 restoreExStates();
 updateNextBanner();
+if(jbKey&&jbBin)jbPull();
 document.querySelectorAll('.train-card,.bio-card,.score-card,.bio-stats-4,.weight-card,.calendar-card,.week-counter-card').forEach(function(el){el.classList.add('fade-in');});
 setTimeout(initFadeIn,200);
 </script>
