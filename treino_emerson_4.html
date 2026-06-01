@@ -501,17 +501,10 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 .sync-panel{position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-bottom:none;border-radius:20px 20px 0 0;padding:24px 20px 48px;z-index:201;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
 .sync-panel.open{transform:translateY(0);}
 .sync-panel-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 20px;}
-.sync-panel-title{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-bottom:4px;}
-.sync-panel-sub{font-size:12px;color:var(--text3);margin-bottom:20px;line-height:1.5;}
-.sync-field-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;margin-top:14px;}
-.sync-inp{width:100%;font-family:var(--mono);font-size:12px;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:10px 12px;outline:none;box-sizing:border-box;transition:border-color .15s;}
-.sync-inp:focus{border-color:var(--blue);}
-.sync-row{display:flex;gap:6px;align-items:center;}
-.sync-row .sync-inp{flex:1;}
-.sync-copy{font-family:var(--mono);font-size:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;white-space:nowrap;transition:all .15s;}
-.sync-copy:hover{border-color:var(--blue);color:var(--blue);}
-.sync-copy.copied{border-color:var(--green);color:var(--green);}
-.sync-actions{display:flex;gap:8px;margin-top:18px;}
+.sync-panel-title{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-bottom:16px;}
+.sync-status-row{display:flex;align-items:center;gap:10px;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;}
+.sync-status-text{font-size:13px;color:var(--text2);flex:1;}
+.sync-actions{display:flex;gap:8px;}
 .sync-btn{flex:1;font-family:var(--mono);font-size:11px;font-weight:700;padding:11px 8px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;letter-spacing:.5px;transition:all .15s;}
 .sync-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
 .sync-btn:hover:not(.primary){background:var(--surface3);}
@@ -538,18 +531,14 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 <div class="sync-overlay" id="sync-overlay" onclick="toggleSyncPanel()"></div>
 <div class="sync-panel" id="sync-panel">
   <div class="sync-panel-handle"></div>
-  <div class="sync-panel-title">☁️ Sincronização</div>
-  <div class="sync-panel-sub">Entre com a mesma API Key em qualquer dispositivo para sincronizar seus dados automaticamente.</div>
-  <div class="sync-field-lbl">API Key (JSONBin)</div>
-  <input type="password" id="sync-api-key" class="sync-inp" placeholder="$2b$10$..." autocomplete="off" />
-  <div class="sync-field-lbl">Bin ID <span style="color:var(--text3);font-size:9px">(gerado automaticamente)</span></div>
-  <div class="sync-row">
-    <input type="text" id="sync-bin-id" class="sync-inp" placeholder="Será criado no primeiro sync" />
-    <button class="sync-copy" id="copy-bin-btn" onclick="copyBinId()">Copiar</button>
+  <div class="sync-panel-title">☁️ Sincronização automática</div>
+  <div class="sync-status-row">
+    <span class="sync-dot" id="sync-dot2"></span>
+    <span class="sync-status-text" id="sync-status-text">Verificando...</span>
   </div>
   <div class="sync-actions">
-    <button class="sync-btn primary" onclick="syncSaveAndPush()">Salvar e Sincronizar</button>
-    <button class="sync-btn" onclick="syncForcePull()">Baixar da nuvem</button>
+    <button class="sync-btn primary" onclick="jbPush();toggleSyncPanel();">Enviar agora</button>
+    <button class="sync-btn" onclick="jbForcePull();">Baixar da nuvem</button>
   </div>
   <div class="sync-last" id="sync-last"></div>
 </div>
@@ -1890,19 +1879,19 @@ function drawWChart(wts){
 }
 
 // ===== JSONBIN SYNC =====
+// ===== SYNC AUTOMÁTICO (JSONBin) =====
 var JBIN='https://api.jsonbin.io/v3';
-var jbKey=localStorage.getItem('jbin_key')||'';
+var JB_KEY='$2a$10$rxA9.laS11qKBq8m3Ni8m.04pQQ2bNtiJGgOK18vUP9RdEcLN6ngi';
 var jbBin=localStorage.getItem('jbin_bin')||'';
 var jbTimer=null;
 
-function jbSetDot(s){
-  var d=document.getElementById('sync-dot');
-  if(!d)return;
-  d.className='sync-dot'+(s?' '+s:'');
-}
-function jbSetLast(msg){
-  var el=document.getElementById('sync-last');
-  if(el)el.textContent=msg||'';
+function jbSetUI(s,msg){
+  var dots=[document.getElementById('sync-dot'),document.getElementById('sync-dot2')];
+  dots.forEach(function(d){if(d)d.className='sync-dot'+(s?' '+s:'');});
+  var st=document.getElementById('sync-status-text');
+  if(st)st.textContent=msg||'';
+  var sl=document.getElementById('sync-last');
+  if(sl)sl.textContent=msg||'';
 }
 function jbCollect(){
   var d={ts:Date.now(),v:1,cargas:{},notes:{}};
@@ -1930,116 +1919,74 @@ function jbApply(d){
   return true;
 }
 function jbRerender(){
-  restoreExStates();
-  updateNextBanner();
-  renderCal();
-  renderWeights();
-  // reload carga panels já abertos
+  restoreExStates();updateNextBanner();renderCal();renderWeights();
   document.querySelectorAll('.train-card.open').forEach(function(c){
-    var cp=c.querySelector('.cargas-panel');
-    if(cp){
-      var tid=c.dataset.tid;
-      c.querySelectorAll('.carga-inp').forEach(function(inp,idx){
-        var val=localStorage.getItem('exwt_'+tid+'_'+idx)||'';
-        inp.value=val;
-        inp.className='carga-inp'+(val?' filled':'');
-      });
-    }
+    var tid=c.dataset.tid;
+    c.querySelectorAll('.carga-inp').forEach(function(inp,idx){
+      var val=localStorage.getItem('exwt_'+tid+'_'+idx)||'';
+      inp.value=val;inp.className='carga-inp'+(val?' filled':'');
+    });
     var np=c.querySelector('.notes-textarea');
-    if(np){
-      var saved=localStorage.getItem('note_'+c.dataset.tid)||'';
-      np.value=saved;
-    }
+    if(np)np.value=localStorage.getItem('note_'+tid)||'';
   });
 }
+async function jbEnsureBin(){
+  if(jbBin)return true;
+  // Busca bin existente pelo nome
+  try{
+    var r=await fetch(JBIN+'/b',{headers:{'X-Master-Key':JB_KEY}});
+    if(r.ok){
+      var j=await r.json();
+      var bins=j.bins||j;
+      if(Array.isArray(bins)){
+        var found=bins.find(function(b){return (b.name||b.snippetName)==='treinos-emerson';});
+        if(found){jbBin=found.id||found.snippetId;localStorage.setItem('jbin_bin',jbBin);return true;}
+      }
+    }
+  }catch(e){}
+  return false;
+}
 async function jbPush(){
-  if(!jbKey)return;
-  jbSetDot('syncing');
+  jbSetUI('syncing','Sincronizando...');
   try{
     var data=jbCollect();
     if(!jbBin){
-      var r=await fetch(JBIN+'/b',{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':jbKey,'X-Bin-Name':'treinos-emerson','X-Bin-Private':'true'},body:JSON.stringify(data)});
+      var r=await fetch(JBIN+'/b',{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':JB_KEY,'X-Bin-Name':'treinos-emerson','X-Bin-Private':'true'},body:JSON.stringify(data)});
       if(!r.ok)throw new Error(r.status);
       var j=await r.json();
-      if(j.metadata&&j.metadata.id){
-        jbBin=j.metadata.id;
-        localStorage.setItem('jbin_bin',jbBin);
-        var binEl=document.getElementById('sync-bin-id');
-        if(binEl)binEl.value=jbBin;
-      }
+      jbBin=(j.metadata&&j.metadata.id)||'';
+      if(jbBin)localStorage.setItem('jbin_bin',jbBin);
     }else{
-      var r2=await fetch(JBIN+'/b/'+jbBin,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':jbKey},body:JSON.stringify(data)});
+      var r2=await fetch(JBIN+'/b/'+jbBin,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JB_KEY},body:JSON.stringify(data)});
       if(!r2.ok)throw new Error(r2.status);
     }
     localStorage.setItem('sync_ts',String(data.ts));
-    jbSetDot('ok');
-    jbSetLast('Sincronizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
-  }catch(e){
-    jbSetDot('error');
-    jbSetLast('Erro ao sincronizar');
-  }
+    jbSetUI('ok','Sincronizado · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){jbSetUI('error','Erro ao sincronizar');}
 }
 async function jbPull(){
-  if(!jbKey||!jbBin)return;
-  jbSetDot('syncing');
+  if(!jbBin)return;
+  jbSetUI('syncing','Buscando dados...');
   try{
-    var r=await fetch(JBIN+'/b/'+jbBin+'/latest',{headers:{'X-Master-Key':jbKey}});
+    var r=await fetch(JBIN+'/b/'+jbBin+'/latest',{headers:{'X-Master-Key':JB_KEY}});
     if(!r.ok)throw new Error(r.status);
     var j=await r.json();
     var applied=jbApply(j.record);
     if(applied)jbRerender();
-    jbSetDot('ok');
-    jbSetLast((applied?'Dados atualizados':'Já está em dia')+' · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
-  }catch(e){
-    jbSetDot('error');
-    jbSetLast('Erro ao buscar dados');
-  }
+    jbSetUI('ok',(applied?'Dados atualizados':'Já está em dia')+' · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){jbSetUI('error','Erro ao buscar dados');}
 }
-function jbSchedule(){
-  clearTimeout(jbTimer);
-  jbTimer=setTimeout(jbPush,3000);
-}
+window.jbForcePull=async function(){
+  toggleSyncPanel();
+  await jbEnsureBin();
+  await jbPull();
+};
+function jbSchedule(){clearTimeout(jbTimer);jbTimer=setTimeout(jbPush,3000);}
 window.toggleSyncPanel=function(){
   var panel=document.getElementById('sync-panel');
   var overlay=document.getElementById('sync-overlay');
-  var open=panel.classList.contains('open');
-  if(!open){
-    var keyEl=document.getElementById('sync-api-key');
-    var binEl=document.getElementById('sync-bin-id');
-    if(keyEl)keyEl.value=jbKey;
-    if(binEl)binEl.value=jbBin;
-  }
   panel.classList.toggle('open');
   overlay.classList.toggle('open');
-};
-window.syncSaveAndPush=function(){
-  var keyEl=document.getElementById('sync-api-key');
-  var binEl=document.getElementById('sync-bin-id');
-  var k=(keyEl?keyEl.value.trim():'');
-  var b=(binEl?binEl.value.trim():'');
-  if(k){jbKey=k;localStorage.setItem('jbin_key',k);}
-  if(b){jbBin=b;localStorage.setItem('jbin_bin',b);}
-  toggleSyncPanel();
-  jbPush();
-};
-window.syncForcePull=function(){
-  var keyEl=document.getElementById('sync-api-key');
-  var binEl=document.getElementById('sync-bin-id');
-  var k=(keyEl?keyEl.value.trim():'');
-  var b=(binEl?binEl.value.trim():'');
-  if(k){jbKey=k;localStorage.setItem('jbin_key',k);}
-  if(b){jbBin=b;localStorage.setItem('jbin_bin',b);}
-  toggleSyncPanel();
-  jbPull();
-};
-window.copyBinId=function(){
-  var binEl=document.getElementById('sync-bin-id');
-  var btn=document.getElementById('copy-bin-btn');
-  if(!binEl||!binEl.value)return;
-  navigator.clipboard.writeText(binEl.value).then(function(){
-    if(btn){btn.textContent='Copiado!';btn.className='sync-copy copied';}
-    setTimeout(function(){if(btn){btn.textContent='Copiar';btn.className='sync-copy';}},2000);
-  });
 };
 
 // INIT
@@ -2049,7 +1996,12 @@ renderCal();
 renderWeights();
 restoreExStates();
 updateNextBanner();
-if(jbKey&&jbBin)jbPull();
+// Auto-sync na abertura
+(async function(){
+  await jbEnsureBin();
+  await jbPull();
+  if(!jbBin)await jbPush();
+})();
 document.querySelectorAll('.train-card,.bio-card,.score-card,.bio-stats-4,.weight-card,.calendar-card,.week-counter-card').forEach(function(el){el.classList.add('fade-in');});
 setTimeout(initFadeIn,200);
 </script>
