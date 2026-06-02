@@ -276,7 +276,19 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 .carga-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);}
 .carga-row:last-child{border-bottom:none;}
 .carga-nome{font-size:12px;color:var(--text2);flex:1;line-height:1.3;}
+.carga-prev{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:1px;}
+.carga-prev.record{color:var(--orange);}
 .carga-inp{font-family:var(--mono);font-size:14px;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:6px 10px;outline:none;width:88px;text-align:center;transition:border-color .15s;}
+.carga-inp.record-inp{border-color:var(--orange);background:rgba(255,77,0,.08);color:var(--orange);}
+/* Contador de exercícios */
+.ex-counter{font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--surface3);border:1px solid var(--border);border-radius:100px;padding:3px 8px;transition:all .2s;white-space:nowrap;}
+.ex-counter.done-all{border-color:rgba(0,217,126,.3);color:var(--green);background:var(--green-dim);}
+/* Streak */
+.streak-row{display:flex;justify-content:flex-end;margin-bottom:10px;}
+.streak-badge{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--orange);background:rgba(255,77,0,.1);border:1px solid rgba(255,77,0,.25);border-radius:100px;padding:5px 12px;display:none;}
+/* Toast */
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-10px);background:var(--orange);color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;padding:10px 20px;border-radius:100px;z-index:999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .carga-inp:focus{border-color:var(--blue);}
 .carga-inp.filled{border-color:rgba(61,142,255,.3);background:var(--blue-dim);color:var(--blue);}
 .wc-canvas{width:100%;height:100%;}
@@ -609,6 +621,7 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
   <div class="month-btn" onclick="selectMonth(3)"><div class="mb-num">M3</div><div class="mb-lbl">Intensidade</div></div>
   <div class="month-btn" onclick="selectMonth(4)"><div class="mb-num">M4</div><div class="mb-lbl">Força</div></div>
 </div>
+<div class="streak-row"><span class="streak-badge" id="streak-badge"></span></div>
 <div class="next-banner" id="next-banner" onclick="goToNextTraining()">
   <div class="next-banner-arrow">›</div>
   <div class="next-banner-label">Próximo treino</div>
@@ -1680,24 +1693,46 @@ window.toggleT=function(h){
       cp.innerHTML='<div class="cargas-label">\u2696\ufe0f Cargas do treino</div>';
       exNames.forEach(function(nome,idx){
         var key='exwt_'+tid+'_'+idx;
+        var prevKey='exwt_prev_'+tid+'_'+idx;
+        var maxKey='exwt_max_'+tid+'_'+idx;
         var val=S.get(key)||'';
+        var prevVal=S.get(prevKey)||'';
+        var maxVal=parseFloat(S.get(maxKey)||'0');
         var row=document.createElement('div');
         row.className='carga-row';
         var inp=document.createElement('input');
-        inp.className='carga-inp'+(val?' filled':'');
+        var isRecord=val&&parseFloat(val)>0&&parseFloat(val)>=maxVal&&maxVal>0&&parseFloat(val)>maxVal;
+        inp.className='carga-inp'+(val?' filled':'')+(isRecord?' record-inp':'');
         inp.type='text';inp.inputMode='decimal';
         inp.placeholder='kg';
         inp.value=val;
         inp.dataset.key=key;
+        var nameDiv=document.createElement('div');
+        nameDiv.style.flex='1';
+        var prevHint='';
+        if(prevVal)prevHint='<div class="carga-prev'+(isRecord?' record':'')+'">Última: '+prevVal+' kg'+(isRecord?' 🏆':'')+'</div>';
+        nameDiv.innerHTML='<span class="carga-nome">'+nome+'</span>'+prevHint;
         inp.addEventListener('input',function(){
           inp.className='carga-inp'+(inp.value.trim()?' filled':'');
         });
         inp.addEventListener('change',function(){
-          S.set(key,inp.value.trim());
+          var newVal=inp.value.trim();
+          var oldVal=S.get(key)||'';
+          if(oldVal&&oldVal!==newVal){S.set(prevKey,oldVal);}
+          var newNum=parseFloat(newVal);
+          var storedMax=parseFloat(S.get(maxKey)||'0');
+          if(newNum>0&&newNum>storedMax){
+            S.set(maxKey,newVal);
+            if(storedMax>0){
+              inp.className='carga-inp filled record-inp';
+              showToast('🏆 Novo recorde! '+newVal+' kg em '+nome.split(' ')[0]);
+            }
+          }
+          S.set(key,newVal);
           try{navigator.vibrate(10);}catch(e){}
           jbSchedule();
         });
-        row.innerHTML='<span class="carga-nome">'+nome+'</span>';
+        row.appendChild(nameDiv);
         row.appendChild(inp);
         cp.appendChild(row);
       });
@@ -1735,8 +1770,30 @@ window.toggleEx=function(el){
     var exs=Array.from(card.querySelectorAll('.ex'));
     var idx=exs.indexOf(el);
     if(idx>=0)S.set('exdone_'+card.dataset.tid+'_'+idx, el.classList.contains('done'));
+    updateCardCounter(card);
   }
 };
+function updateCardCounter(card){
+  var counter=card.querySelector('.ex-counter');
+  if(!counter)return;
+  var total=card.querySelectorAll('.ex').length;
+  var done=card.querySelectorAll('.ex.done').length;
+  counter.textContent=done+'/'+total;
+  counter.className='ex-counter'+(done===total&&total>0?' done-all':'');
+}
+function initCardCounters(){
+  document.querySelectorAll('.train-card[data-tid]').forEach(function(card){
+    if(card.querySelector('.ex-counter'))return;
+    var actions=card.querySelector('.t-actions');
+    if(!actions)return;
+    var span=document.createElement('span');
+    span.className='ex-counter';
+    var chevron=actions.querySelector('.chevron');
+    if(chevron)actions.insertBefore(span,chevron);
+    else actions.appendChild(span);
+    updateCardCounter(card);
+  });
+}
 function restoreExStates(){
   document.querySelectorAll('.train-card[data-tid]').forEach(function(card){
     var tid=card.dataset.tid;
@@ -1812,6 +1869,7 @@ window.markDone=function(e,id){
   else{done.add(id);card.classList.add('completed');btn.classList.add('checked');beep(660,0.08);setTimeout(function(){beep(880,0.1);},100);try{navigator.vibrate([30,20,60]);}catch(e){}addTrainDay();S.set('last_done_tid',id);}
   updCount();
   updateNextBanner();
+  updateStreak();
   jbSchedule();
 };
 function updCount(){
@@ -2069,6 +2127,41 @@ window.toggleSyncPanel=function(){
   overlay.classList.toggle('open');
 };
 
+// STREAK
+function calcStreak(){
+  var days=S.get('trained_days')||[];
+  if(!days.length)return 0;
+  days=days.slice().sort().reverse();
+  var today=new Date().toISOString().split('T')[0];
+  var yesterday=new Date(Date.now()-86400000).toISOString().split('T')[0];
+  if(!days.includes(today)&&!days.includes(yesterday))return 0;
+  var streak=0;
+  var d=new Date(days.includes(today)?today:yesterday);
+  while(true){
+    var ds=d.toISOString().split('T')[0];
+    if(days.includes(ds)){streak++;d=new Date(d.getTime()-86400000);}
+    else break;
+  }
+  return streak;
+}
+function updateStreak(){
+  var s=calcStreak();
+  var el=document.getElementById('streak-badge');
+  if(!el)return;
+  if(s>=2){el.textContent='🔥 '+s+' dias seguidos';el.style.display='inline-flex';}
+  else if(s===1){el.textContent='💪 Treinando hoje';el.style.display='inline-flex';}
+  else el.style.display='none';
+}
+
+// TOAST
+function showToast(msg){
+  var t=document.getElementById('mfit-toast');
+  if(!t){t=document.createElement('div');t.id='mfit-toast';t.className='toast';document.body.appendChild(t);}
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(function(){t.classList.remove('show');},2500);
+}
+
 // INIT
 updTD();
 updCount();
@@ -2076,6 +2169,8 @@ renderCal();
 renderWeights();
 restoreExStates();
 updateNextBanner();
+initCardCounters();
+updateStreak();
 // Auto-sync na abertura
 (async function(){
   await jbEnsureBin();
@@ -2084,5 +2179,9 @@ updateNextBanner();
 })();
 document.querySelectorAll('.train-card,.bio-card,.score-card,.bio-stats-4,.weight-card,.calendar-card,.week-counter-card').forEach(function(el){el.classList.add('fade-in');});
 setTimeout(initFadeIn,200);
+// SERVICE WORKER (offline)
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/treinos-emerson/sw.js').catch(function(){});
+}
 </script>
 </body></html>
