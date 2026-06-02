@@ -346,6 +346,19 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 .evo-delta{font-size:11px;font-weight:600;color:var(--green);}
 .evo-delta-blue{color:var(--blue);}
 
+/* COMPARAÇÃO EXAMES */
+.cmp-table{width:100%;border-collapse:collapse;font-size:12px;}
+.cmp-table th{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);}
+.cmp-table th.cmp-cur{color:var(--accent);border-bottom:2px solid var(--accent);}
+.cmp-table td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.04);text-align:center;color:var(--text2);}
+.cmp-table td:first-child{text-align:left;font-size:11px;color:var(--text3);font-family:var(--mono);padding-left:0;}
+.cmp-table tr:last-child td{border-bottom:none;}
+.cmp-table td.cmp-cur{font-weight:700;color:var(--text);}
+.cmp-val-down{color:var(--green);font-size:9px;display:block;}
+.cmp-val-up{color:var(--orange);font-size:9px;display:block;}
+.cmp-val-good{color:var(--green);font-size:9px;display:block;}
+.cmp-na{color:var(--border2);}
+
 /* PROGRESSO COMPLETO */
 .prog-list{display:flex;flex-direction:column;gap:14px;}
 .prog-item-full{}
@@ -1326,6 +1339,68 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
         <div class="evo-delta evo-delta-blue">+1,7 kg ganho 🔥</div>
       </div>
     </div>
+  </div>
+
+  <!-- COMPARAÇÃO DE EXAMES -->
+  <div class="bio-card">
+    <div class="bio-card-header">
+      <div class="bio-card-title">Comparação de Exames</div>
+      <div class="bio-card-sub">3 medições InBody</div>
+    </div>
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Jan/26</th>
+          <th>Abr/26</th>
+          <th class="cmp-cur">Mai/26</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Peso</td>
+          <td>109 kg</td>
+          <td>98,9 kg</td>
+          <td class="cmp-cur">98,4 kg<span class="cmp-val-down">−0,5</span></td>
+        </tr>
+        <tr>
+          <td>Gordura</td>
+          <td>48 kg</td>
+          <td>39,1 kg</td>
+          <td class="cmp-cur">35,4 kg<span class="cmp-val-down">−3,7</span></td>
+        </tr>
+        <tr>
+          <td>% Gordura</td>
+          <td>~44%</td>
+          <td>39,6%</td>
+          <td class="cmp-cur">36%<span class="cmp-val-down">−3,6%</span></td>
+        </tr>
+        <tr>
+          <td>Músculo</td>
+          <td>34 kg</td>
+          <td>33,9 kg</td>
+          <td class="cmp-cur">35,7 kg<span class="cmp-val-good">+1,8 🔥</span></td>
+        </tr>
+        <tr>
+          <td>Visceral</td>
+          <td class="cmp-na">—</td>
+          <td>Nível 19</td>
+          <td class="cmp-cur">Nível 16<span class="cmp-val-down">−3</span></td>
+        </tr>
+        <tr>
+          <td>Score InBody</td>
+          <td class="cmp-na">—</td>
+          <td>54/100</td>
+          <td class="cmp-cur">62/100<span class="cmp-val-good">+8</span></td>
+        </tr>
+        <tr>
+          <td>TMB</td>
+          <td class="cmp-na">—</td>
+          <td>1.661 kcal</td>
+          <td class="cmp-cur">1.731 kcal<span class="cmp-val-good">+70</span></td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- METAS DE PROGRESSO -->
