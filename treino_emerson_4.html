@@ -2070,7 +2070,6 @@ function jbRerender(){
 }
 async function jbEnsureBin(){
   if(jbBin)return true;
-  // Busca bin existente pelo nome
   try{
     var r=await fetch(JBIN+'/b',{headers:{'X-Master-Key':JB_KEY}});
     if(r.ok){
@@ -2089,30 +2088,39 @@ async function jbPush(){
   try{
     var data=jbCollect();
     if(!jbBin){
-      var r=await fetch(JBIN+'/b',{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':JB_KEY,'X-Bin-Name':'treinos-emerson','X-Bin-Private':'true'},body:JSON.stringify(data)});
-      if(!r.ok)throw new Error(r.status);
+      // Cria bin sem X-Bin-Private (feature paga no JSONBin)
+      var r=await fetch(JBIN+'/b',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Master-Key':JB_KEY,'X-Bin-Name':'treinos-emerson'},
+        body:JSON.stringify(data)
+      });
+      if(!r.ok){var errBody=await r.text().catch(function(){return '';});throw new Error(r.status+' '+errBody.slice(0,80));}
       var j=await r.json();
       jbBin=(j.metadata&&j.metadata.id)||'';
       if(jbBin)localStorage.setItem('jbin_bin',jbBin);
     }else{
-      var r2=await fetch(JBIN+'/b/'+jbBin,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JB_KEY},body:JSON.stringify(data)});
-      if(!r2.ok)throw new Error(r2.status);
+      var r2=await fetch(JBIN+'/b/'+jbBin,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json','X-Master-Key':JB_KEY},
+        body:JSON.stringify(data)
+      });
+      if(!r2.ok){var errBody2=await r2.text().catch(function(){return '';});throw new Error(r2.status+' '+errBody2.slice(0,80));}
     }
     localStorage.setItem('sync_ts',String(data.ts));
     jbSetUI('ok','Sincronizado · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
-  }catch(e){jbSetUI('error','Erro ao sincronizar');}
+  }catch(e){jbSetUI('error','Erro: '+e.message);}
 }
 async function jbPull(){
   if(!jbBin)return;
   jbSetUI('syncing','Buscando dados...');
   try{
     var r=await fetch(JBIN+'/b/'+jbBin+'/latest',{headers:{'X-Master-Key':JB_KEY}});
-    if(!r.ok)throw new Error(r.status);
+    if(!r.ok){var errBody=await r.text().catch(function(){return '';});throw new Error(r.status+' '+errBody.slice(0,80));}
     var j=await r.json();
     var applied=jbApply(j.record);
     if(applied)jbRerender();
     jbSetUI('ok',(applied?'Dados atualizados':'Já está em dia')+' · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
-  }catch(e){jbSetUI('error','Erro ao buscar dados');}
+  }catch(e){jbSetUI('error','Erro: '+e.message);}
 }
 window.jbForcePull=async function(){
   toggleSyncPanel();
