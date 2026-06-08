@@ -2037,7 +2037,7 @@ function drawWChart(wts){
 
 // ===== SYNC AUTOMÁTICO (npoint.io — sem chave, sem conta) =====
 var NPOINT='https://api.npoint.io';
-var jblobId=localStorage.getItem('jblob_id')||'';
+var jblobId=localStorage.getItem('npoint_id')||'';
 var jbTimer=null;
 
 function jbSetUI(s,msg){
@@ -2102,7 +2102,7 @@ async function jbPush(){
       if(!r.ok){var eb=await r.text().catch(function(){return '';});throw new Error(r.status+' '+eb.slice(0,80));}
       var j=await r.json();
       jblobId=String(j.id||j.token||'');
-      if(jblobId){localStorage.setItem('jblob_id',jblobId);jbUpdateCodeUI();}
+      if(jblobId){localStorage.setItem('npoint_id',jblobId);jbUpdateCodeUI();}
     }else{
       var r2=await fetch(NPOINT+'/'+jblobId,{
         method:'POST',
@@ -2120,6 +2120,7 @@ async function jbPull(){
   jbSetUI('syncing','Buscando dados...');
   try{
     var r=await fetch(NPOINT+'/'+jblobId);
+    if(r.status===404){jblobId='';localStorage.removeItem('npoint_id');await jbPush();return;}
     if(!r.ok){var eb=await r.text().catch(function(){return '';});throw new Error(r.status+' '+eb.slice(0,80));}
     var d=await r.json();
     var applied=jbApply(d);
@@ -2145,7 +2146,7 @@ window.jbRestoreCode=async function(){
   var code=input.value.trim();
   if(!code)return;
   jblobId=code;
-  localStorage.setItem('jblob_id',code);
+  localStorage.setItem('npoint_id',code);
   jbUpdateCodeUI();
   input.value='';
   document.getElementById('restore-section').style.display='none';
