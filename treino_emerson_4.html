@@ -2035,8 +2035,8 @@ function drawWChart(wts){
   });
 }
 
-// ===== SYNC AUTOMÁTICO (JSONBlob — sem chave, sem conta) =====
-var JBLOB='https://jsonblob.com/api/jsonBlob';
+// ===== SYNC AUTOMÁTICO (npoint.io — sem chave, sem conta) =====
+var NPOINT='https://api.npoint.io';
 var jblobId=localStorage.getItem('jblob_id')||'';
 var jbTimer=null;
 
@@ -2094,20 +2094,20 @@ async function jbPush(){
   try{
     var data=jbCollect();
     if(!jblobId){
-      var r=await fetch(JBLOB,{
+      var r=await fetch(NPOINT+'/tokens',{
         method:'POST',
-        headers:{'Content-Type':'application/json','Accept':'application/json'},
-        body:JSON.stringify(data)
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({json:data})
       });
       if(!r.ok){var eb=await r.text().catch(function(){return '';});throw new Error(r.status+' '+eb.slice(0,80));}
-      var loc=r.headers.get('Location')||'';
-      jblobId=loc.split('/').pop();
+      var j=await r.json();
+      jblobId=String(j.id||j.token||'');
       if(jblobId){localStorage.setItem('jblob_id',jblobId);jbUpdateCodeUI();}
     }else{
-      var r2=await fetch(JBLOB+'/'+jblobId,{
-        method:'PUT',
-        headers:{'Content-Type':'application/json','Accept':'application/json'},
-        body:JSON.stringify(data)
+      var r2=await fetch(NPOINT+'/'+jblobId,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({json:data})
       });
       if(!r2.ok){var eb2=await r2.text().catch(function(){return '';});throw new Error(r2.status+' '+eb2.slice(0,80));}
     }
@@ -2119,7 +2119,7 @@ async function jbPull(){
   if(!jblobId)return;
   jbSetUI('syncing','Buscando dados...');
   try{
-    var r=await fetch(JBLOB+'/'+jblobId,{headers:{'Accept':'application/json'}});
+    var r=await fetch(NPOINT+'/'+jblobId);
     if(!r.ok){var eb=await r.text().catch(function(){return '';});throw new Error(r.status+' '+eb.slice(0,80));}
     var d=await r.json();
     var applied=jbApply(d);
