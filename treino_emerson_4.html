@@ -571,6 +571,19 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
     <button class="sync-btn" onclick="jbForcePull();">Baixar da nuvem</button>
   </div>
   <div class="sync-last" id="sync-last"></div>
+  <div style="margin-top:14px;padding:12px 14px;background:var(--surface3);border:1px solid var(--border);border-radius:10px;">
+    <div style="font-size:10px;color:var(--text3);font-family:var(--mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Código de backup</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <code id="sync-code-display" style="font-family:var(--mono);font-size:11px;color:var(--text2);flex:1;word-break:break-all;">–</code>
+      <button onclick="copySyncCode()" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-family:var(--mono);white-space:nowrap;">Copiar</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px;">Use para recuperar dados em outro dispositivo</div>
+    <div style="margin-top:10px;"><button onclick="toggleRestoreSection()" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--mono);">Restaurar de outro dispositivo</button></div>
+    <div id="restore-section" style="display:none;margin-top:10px;">
+      <input id="restore-code-input" type="text" placeholder="Cole o código aqui" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:13px;font-family:var(--mono);">
+      <button onclick="jbRestoreCode()" style="margin-top:8px;width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Restaurar</button>
+    </div>
+  </div>
 </div>
 
 <!-- BOTTOM NAV (mobile) -->
@@ -2016,11 +2029,9 @@ function drawWChart(wts){
   });
 }
 
-// ===== JSONBIN SYNC =====
-// ===== SYNC AUTOMÁTICO (JSONBin) =====
-var JBIN='https://api.jsonbin.io/v3';
-var JB_KEY='$2a$10$rxA9.laS11qKBq8m3Ni8m.04pQQ2bNtiJGgOK18vUP9RdEcLN6ngi';
-var jbBin=localStorage.getItem('jbin_bin')||'';
+// ===== SYNC AUTOMÁTICO (JSONBlob — sem chave, sem conta) =====
+var JBLOB='https://jsonblob.com/api/jsonBlob';
+var jblobId=localStorage.getItem('jblob_id')||'';
 var jbTimer=null;
 
 function jbSetUI(s,msg){
@@ -2068,63 +2079,70 @@ function jbRerender(){
     if(np)np.value=localStorage.getItem('note_'+tid)||'';
   });
 }
-async function jbEnsureBin(){
-  if(jbBin)return true;
-  try{
-    var r=await fetch(JBIN+'/b',{headers:{'X-Master-Key':JB_KEY}});
-    if(r.ok){
-      var j=await r.json();
-      var bins=j.bins||j;
-      if(Array.isArray(bins)){
-        var found=bins.find(function(b){return (b.name||b.snippetName)==='treinos-emerson';});
-        if(found){jbBin=found.id||found.snippetId;localStorage.setItem('jbin_bin',jbBin);return true;}
-      }
-    }
-  }catch(e){}
-  return false;
+function jbUpdateCodeUI(){
+  var el=document.getElementById('sync-code-display');
+  if(el)el.textContent=jblobId||'–';
 }
 async function jbPush(){
   jbSetUI('syncing','Sincronizando...');
   try{
     var data=jbCollect();
-    if(!jbBin){
-      // Cria bin sem X-Bin-Private (feature paga no JSONBin)
-      var r=await fetch(JBIN+'/b',{
+    if(!jblobId){
+      var r=await fetch(JBLOB,{
         method:'POST',
-        headers:{'Content-Type':'application/json','X-Master-Key':JB_KEY,'X-Bin-Name':'treinos-emerson'},
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
         body:JSON.stringify(data)
       });
-      if(!r.ok){var errBody=await r.text().catch(function(){return '';});throw new Error(r.status+' '+errBody.slice(0,80));}
-      var j=await r.json();
-      jbBin=(j.metadata&&j.metadata.id)||'';
-      if(jbBin)localStorage.setItem('jbin_bin',jbBin);
+      if(!r.ok){var eb=await r.text().catch(function(){return '';});throw new Error(r.status+' '+eb.slice(0,80));}
+      var loc=r.headers.get('Location')||'';
+      jblobId=loc.split('/').pop();
+      if(jblobId){localStorage.setItem('jblob_id',jblobId);jbUpdateCodeUI();}
     }else{
-      var r2=await fetch(JBIN+'/b/'+jbBin,{
+      var r2=await fetch(JBLOB+'/'+jblobId,{
         method:'PUT',
-        headers:{'Content-Type':'application/json','X-Master-Key':JB_KEY},
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
         body:JSON.stringify(data)
       });
-      if(!r2.ok){var errBody2=await r2.text().catch(function(){return '';});throw new Error(r2.status+' '+errBody2.slice(0,80));}
+      if(!r2.ok){var eb2=await r2.text().catch(function(){return '';});throw new Error(r2.status+' '+eb2.slice(0,80));}
     }
     localStorage.setItem('sync_ts',String(data.ts));
     jbSetUI('ok','Sincronizado · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
   }catch(e){jbSetUI('error','Erro: '+e.message);}
 }
 async function jbPull(){
-  if(!jbBin)return;
+  if(!jblobId)return;
   jbSetUI('syncing','Buscando dados...');
   try{
-    var r=await fetch(JBIN+'/b/'+jbBin+'/latest',{headers:{'X-Master-Key':JB_KEY}});
-    if(!r.ok){var errBody=await r.text().catch(function(){return '';});throw new Error(r.status+' '+errBody.slice(0,80));}
-    var j=await r.json();
-    var applied=jbApply(j.record);
+    var r=await fetch(JBLOB+'/'+jblobId,{headers:{'Accept':'application/json'}});
+    if(!r.ok){var eb=await r.text().catch(function(){return '';});throw new Error(r.status+' '+eb.slice(0,80));}
+    var d=await r.json();
+    var applied=jbApply(d);
     if(applied)jbRerender();
     jbSetUI('ok',(applied?'Dados atualizados':'Já está em dia')+' · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
   }catch(e){jbSetUI('error','Erro: '+e.message);}
 }
 window.jbForcePull=async function(){
   toggleSyncPanel();
-  await jbEnsureBin();
+  await jbPull();
+};
+window.copySyncCode=function(){
+  if(!jblobId)return;
+  navigator.clipboard.writeText(jblobId).then(function(){showToast('Código copiado!');}).catch(function(){});
+};
+window.toggleRestoreSection=function(){
+  var s=document.getElementById('restore-section');
+  if(s)s.style.display=s.style.display==='none'?'block':'none';
+};
+window.jbRestoreCode=async function(){
+  var input=document.getElementById('restore-code-input');
+  if(!input)return;
+  var code=input.value.trim();
+  if(!code)return;
+  jblobId=code;
+  localStorage.setItem('jblob_id',code);
+  jbUpdateCodeUI();
+  input.value='';
+  document.getElementById('restore-section').style.display='none';
   await jbPull();
 };
 function jbSchedule(){clearTimeout(jbTimer);jbTimer=setTimeout(jbPush,3000);}
@@ -2133,6 +2151,7 @@ window.toggleSyncPanel=function(){
   var overlay=document.getElementById('sync-overlay');
   panel.classList.toggle('open');
   overlay.classList.toggle('open');
+  jbUpdateCodeUI();
 };
 
 // STREAK
@@ -2181,9 +2200,8 @@ initCardCounters();
 updateStreak();
 // Auto-sync na abertura
 (async function(){
-  await jbEnsureBin();
   await jbPull();
-  if(!jbBin)await jbPush();
+  if(!jblobId)await jbPush();
 })();
 document.querySelectorAll('.train-card,.bio-card,.score-card,.bio-stats-4,.weight-card,.calendar-card,.week-counter-card').forEach(function(el){el.classList.add('fade-in');});
 setTimeout(initFadeIn,200);
