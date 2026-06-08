@@ -38,9 +38,7 @@ function addWeight(){if(window._addWeight)window._addWeight();}
 function delWeight(i){if(window._delWeight)window._delWeight(i);}
 function saveNote(tid){if(window._saveNote)window._saveNote(tid);}
 function markDone(e,id){if(window._markDone)window._markDone(e,id);}
-function setPreset(s,btn){if(window._setPreset)window._setPreset(s,btn);}
-function toggleTimer(){if(window._toggleTimer)window._toggleTimer();}
-function resetTimer(){if(window._resetTimer)window._resetTimer();}
+
 </script>
 <style>
 :root{
@@ -110,19 +108,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .prog-val{font-family:var(--mono);font-size:10px;color:var(--text3);min-width:90px;text-align:right;flex-shrink:0;}
 
 /* TIMER */
-.timer-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:20px;text-align:center;}
-.timer-lbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;}
-.timer-disp{font-family:var(--mono);font-size:48px;font-weight:700;color:var(--accent);letter-spacing:-2px;line-height:1;margin-bottom:14px;transition:color .3s;}
-.timer-disp.run{color:var(--green);}
-.timer-disp.warn{color:var(--yellow);}
+
 .presets{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;}
-.preset-btn{font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 12px;border-radius:100px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;}
-.preset-btn:hover,.preset-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
 .ctrl-row{display:flex;gap:8px;justify-content:center;}
-.ctrl-btn{font-family:var(--mono);font-size:11px;font-weight:700;padding:9px 20px;border-radius:100px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;letter-spacing:1px;text-transform:uppercase;}
-.ctrl-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
-.ctrl-btn.primary:hover{background:var(--accent2);}
-.ctrl-btn:hover:not(.primary){background:var(--surface3);}
 
 /* MONTH NAV */
 .month-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;}
@@ -461,7 +449,7 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 
   /* Tap feedback: escala nos elementos interativos */
   .ex:active,.train-card .t-header:active{transform:scale(0.985);transition:transform .08s;}
-  .ctrl-btn:active,.preset-btn:active,.month-btn:active,.check-btn:active,
+  .month-btn:active,.check-btn:active,
   .bottom-tab:active,.nav-tab:active,.cal-btn:active,.weight-add-btn:active{
     transform:scale(0.92);transition:transform .08s;
   }
@@ -478,7 +466,7 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
   .app{padding-bottom:calc(88px + env(safe-area-inset-bottom));}
 }
 ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
-@media(max-width:480px){.stats-grid{grid-template-columns:repeat(2,1fr);}.title{font-size:52px;}.timer-disp{font-size:36px;}.prog-lbl{min-width:90px;}}
+@media(max-width:480px){.stats-grid{grid-template-columns:repeat(2,1fr);}.title{font-size:52px;}.prog-lbl{min-width:90px;}}
 
 /* ═══════════ MOBILE DESIGN ═══════════ */
 .top-nav{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));}
@@ -502,8 +490,6 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
   .ex-ck{width:26px;height:26px;}
   .ex-name{font-size:13px;}
   .check-btn{width:38px;height:38px;font-size:15px;}
-  .preset-btn{padding:10px 16px;font-size:11px;}
-  .ctrl-btn{padding:14px 26px;font-size:12px;min-height:48px;}
   .month-btn{padding:16px 6px;}
   .mb-num{font-size:20px;}
   .mb-lbl{font-size:8px;}
@@ -522,7 +508,6 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
   /* Spacing */
   .stat-card{padding:14px 12px;}
   .stat-val{font-size:20px;}
-  .timer-wrap{padding:18px 16px;}
   .month-nav{gap:5px;margin-bottom:10px;}
   .t-body{padding:0 14px 16px;}
   .bio-card{padding:18px 16px;}
@@ -639,21 +624,6 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
   <div class="sub">Emerson Soares · 27 anos · 98,4kg · Foco em perda de gordura</div>
 </header>
 
-<div class="timer-wrap">
-  <div class="timer-lbl">⏱ Cronômetro de descanso</div>
-  <div class="timer-disp" id="td">01:00</div>
-  <div class="presets">
-    <button class="preset-btn active" onclick="setPreset(60,this)">1 min</button>
-    <button class="preset-btn" onclick="setPreset(90,this)">1:30</button>
-    <button class="preset-btn" onclick="setPreset(120,this)">2 min</button>
-    <button class="preset-btn" onclick="setPreset(180,this)">3 min</button>
-    <button class="preset-btn" onclick="setPreset(300,this)">5 min</button>
-  </div>
-  <div class="ctrl-row" style="margin-top:10px">
-    <button class="ctrl-btn primary" id="tt" onclick="toggleTimer()">▶ INICIAR</button>
-    <button class="ctrl-btn" onclick="resetTimer()">↺ RESET</button>
-  </div>
-</div>
 
 <div class="month-nav">
   <div class="month-btn active" onclick="selectMonth(1)"><div class="mb-num">M1</div><div class="mb-lbl">Adaptação</div></div>
@@ -1708,14 +1678,9 @@ if(el)el.textContent=d.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric'
 
 
 // TIMER
-var tSec=60,tTotal=60,tRun=false,tInt=null,aCtx=null;
+var aCtx=null;
 function getAC(){if(!aCtx)aCtx=new(window.AudioContext||window.webkitAudioContext)();return aCtx;}
 function beep(f,dur,v){try{var c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.setValueAtTime(v||0.3,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dur);o.start(c.currentTime);o.stop(c.currentTime+dur);}catch(e){}}
-function fmtT(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
-function updTD(){var el=document.getElementById('td');if(el){el.textContent=fmtT(tSec);el.className='timer-disp'+(tRun?(tSec<=10?' warn':' run'):'');}}
-window.setPreset=function(s,btn){tTotal=tSec=s;tRun=false;clearInterval(tInt);document.getElementById('tt').textContent='\u25b6 INICIAR';updTD();document.querySelectorAll('.preset-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');};
-window.toggleTimer=function(){if(tRun){clearInterval(tInt);tRun=false;document.getElementById('tt').textContent='\u25b6 CONTINUAR';}else{if(tSec===0)tSec=tTotal;tRun=true;document.getElementById('tt').textContent='\u23f8 PAUSAR';tInt=setInterval(function(){tSec--;updTD();if(tSec===10)beep(880,0.15);if(tSec===0){clearInterval(tInt);tRun=false;document.getElementById('tt').textContent='\u25b6 INICIAR';document.getElementById('td').className='timer-disp';beep(1320,0.1);setTimeout(function(){beep(1320,0.1);},200);setTimeout(function(){beep(1760,0.3);},400);try{navigator.vibrate([100,50,100,50,200]);}catch(e){}}},1000);}};
-window.resetTimer=function(){clearInterval(tInt);tRun=false;tSec=tTotal;document.getElementById('tt').textContent='\u25b6 INICIAR';updTD();};
 
 // TRAIN CARD + NOTAS + CARGAS
 window.toggleT=function(h){
@@ -2346,7 +2311,6 @@ function showToast(msg){
 }
 
 // INIT
-updTD();
 updCount();
 renderCal();
 renderWeights();
