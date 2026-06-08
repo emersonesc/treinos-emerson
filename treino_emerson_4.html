@@ -48,6 +48,7 @@ function resetTimer(){if(window._resetTimer)window._resetTimer();}
   --mob-bg:#000000;
   --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
   --accent:#FF4D00;--accent2:#FF7A3D;--accent-dim:rgba(255,77,0,0.12);
+  --orange:#FF4D00;
   --green:#00D97E;--green-dim:rgba(0,217,126,0.12);
   --blue:#3D8EFF;--blue-dim:rgba(61,142,255,0.12);
   --purple:#A855F7;--purple-dim:rgba(168,85,247,0.12);
@@ -56,6 +57,17 @@ function resetTimer(){if(window._resetTimer)window._resetTimer();}
   --mono:'Space Mono',monospace;--display:'Syne',sans-serif;--body:'Inter',sans-serif;
   --r:14px;--rs:8px;
 }
+body.light{
+  --bg:#F0F0F0;--surface:#FFFFFF;--surface2:#E8E8E8;--surface3:#DCDCDC;
+  --mob-bg:#F0F0F0;
+  --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);
+  --text:#111111;--text2:#555555;--text3:#AAAAAA;
+  --accent-dim:rgba(255,77,0,0.1);--green-dim:rgba(0,200,100,0.1);
+  --blue-dim:rgba(30,100,255,0.1);
+}
+body.light body::before{opacity:.08;}
+body.light .orb-1{background:rgba(255,77,0,0.04);}
+body.light .orb-2{background:rgba(61,142,255,0.04);}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
 body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;overflow-x:hidden;}
@@ -278,6 +290,8 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 .carga-nome{font-size:12px;color:var(--text2);flex:1;line-height:1.3;}
 .carga-prev{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:1px;}
 .carga-prev.record{color:var(--orange);}
+.carga-chart-btn{background:transparent;border:none;cursor:pointer;font-size:13px;padding:4px 5px;border-radius:6px;opacity:.5;transition:opacity .15s;flex-shrink:0;}
+.carga-chart-btn:hover{opacity:1;}
 .carga-inp{font-family:var(--mono);font-size:14px;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:6px 10px;outline:none;width:88px;text-align:center;transition:border-color .15s;}
 .carga-inp.record-inp{border-color:var(--orange);background:rgba(255,77,0,.08);color:var(--orange);}
 /* Contador de exercícios */
@@ -553,6 +567,7 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
       <button class="nav-tab active" onclick="showSection('treinos')">💪 Treinos</button>
       <button class="nav-tab" onclick="showSection('bio')">📊 Bioimpedância</button>
     </div>
+    <button class="sync-icon-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar tema">🌙</button>
     <button class="sync-icon-btn" onclick="toggleSyncPanel()" title="Sincronização">☁️<span class="sync-dot" id="sync-dot"></span></button>
   </div>
 </nav>
@@ -584,6 +599,18 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
       <button onclick="jbRestoreCode()" style="margin-top:8px;width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Restaurar</button>
     </div>
   </div>
+</div>
+
+<!-- EXERCISE CHART MODAL -->
+<div class="sync-overlay" id="exchart-overlay" onclick="closeExChart()"></div>
+<div class="sync-panel" id="exchart-panel">
+  <div class="sync-panel-handle"></div>
+  <div class="sync-panel-title" id="exchart-title">📈 Progressão</div>
+  <div style="position:relative;height:180px;margin:0 0 10px;">
+    <canvas id="exchart-canvas" style="width:100%;height:100%;display:block;"></canvas>
+  </div>
+  <div id="exchart-empty" style="display:none;text-align:center;color:var(--text3);font-size:13px;padding:20px 0;">Registre cargas em mais de um dia para ver o gráfico.</div>
+  <div id="exchart-stats" style="display:flex;gap:8px;margin-bottom:4px;"></div>
 </div>
 
 <!-- BOTTOM NAV (mobile) -->
@@ -1742,11 +1769,25 @@ window.toggleT=function(h){
             }
           }
           S.set(key,newVal);
+          if(newNum>0){
+            var today=new Date().toISOString().split('T')[0];
+            var histK='exhist_'+tid+'_'+idx;
+            var hist=S.get(histK)||[];
+            hist=hist.filter(function(h){return h.d!==today;});
+            hist.push({d:today,v:newNum});
+            S.set(histK,hist);
+          }
           try{navigator.vibrate(10);}catch(e){}
           jbSchedule();
         });
+        var chartBtn=document.createElement('button');
+        chartBtn.className='carga-chart-btn';
+        chartBtn.title='Ver progressão';
+        chartBtn.textContent='📈';
+        (function(hk,nm){chartBtn.onclick=function(){openExChart(hk,nm);};})(('exhist_'+tid+'_'+idx),nome);
         row.appendChild(nameDiv);
         row.appendChild(inp);
+        row.appendChild(chartBtn);
         cp.appendChild(row);
       });
       tbody.appendChild(cp);
@@ -2047,7 +2088,7 @@ function jbCollect(){
   for(var i=0;i<localStorage.length;i++){
     var k=localStorage.key(i);
     if(!k)continue;
-    if(k.startsWith('exwt_'))d.cargas[k]=localStorage.getItem(k);
+    if(k.startsWith('exwt_')||k.startsWith('exhist_'))d.cargas[k]=localStorage.getItem(k);
     else if(k.startsWith('note_'))d.notes[k]=localStorage.getItem(k);
   }
   var ltd=localStorage.getItem('last_done_tid');if(ltd)d.last_done_tid=ltd;
@@ -2145,6 +2186,121 @@ window.jbRestoreCode=async function(){
   document.getElementById('restore-section').style.display='none';
   await jbPull();
 };
+// ===== EXERCISE CHART =====
+function openExChart(histKey,name){
+  var hist=S.get(histKey)||[];
+  hist=hist.slice().sort(function(a,b){return a.d<b.d?-1:1;});
+  document.getElementById('exchart-title').textContent='📈 '+name;
+  document.getElementById('exchart-panel').classList.add('open');
+  document.getElementById('exchart-overlay').classList.add('open');
+  var emptyEl=document.getElementById('exchart-empty');
+  var statsEl=document.getElementById('exchart-stats');
+  if(hist.length<2){
+    emptyEl.style.display='block';
+    statsEl.innerHTML='';
+    return;
+  }
+  emptyEl.style.display='none';
+  var vals=hist.map(function(h){return h.v;});
+  var maxV=Math.max.apply(null,vals),lastV=vals[vals.length-1];
+  statsEl.innerHTML=
+    '<div style="flex:1;padding:10px;background:var(--surface3);border-radius:8px;text-align:center;">'+
+      '<div style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent);">'+lastV+'kg</div>'+
+      '<div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">Atual</div>'+
+    '</div>'+
+    '<div style="flex:1;padding:10px;background:var(--surface3);border-radius:8px;text-align:center;">'+
+      '<div style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--orange);">'+maxV+'kg</div>'+
+      '<div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">Recorde</div>'+
+    '</div>'+
+    '<div style="flex:1;padding:10px;background:var(--surface3);border-radius:8px;text-align:center;">'+
+      '<div style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--text);">'+hist.length+'</div>'+
+      '<div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">Sessões</div>'+
+    '</div>';
+  setTimeout(function(){drawExChart(hist);},30);
+}
+window.closeExChart=function(){
+  document.getElementById('exchart-panel').classList.remove('open');
+  document.getElementById('exchart-overlay').classList.remove('open');
+};
+function drawExChart(hist){
+  var canvas=document.getElementById('exchart-canvas');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var W=canvas.offsetWidth||300,H=180;
+  var dpr=window.devicePixelRatio||1;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);ctx.clearRect(0,0,W,H);
+  if(hist.length<2)return;
+  var vals=hist.map(function(h){return h.v;});
+  var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+  var pad=(mx-mn)*0.25||5;mn-=pad;mx+=pad;
+  var p={l:14,r:14,t:24,b:18};
+  var gW=W-p.l-p.r,gH=H-p.t-p.b;
+  var xS=hist.length>1?gW/(hist.length-1):0;
+  var yS=function(v){return p.t+gH-(((v-mn)/(mx-mn))*gH);};
+  var maxIdx=vals.indexOf(Math.max.apply(null,vals));
+  var minIdx=vals.indexOf(Math.min.apply(null,vals));
+  // Grid
+  ctx.strokeStyle='rgba(128,128,128,0.1)';ctx.lineWidth=1;
+  for(var g=1;g<4;g++){var gy=p.t+(gH/3)*g;ctx.beginPath();ctx.moveTo(p.l,gy);ctx.lineTo(W-p.r,gy);ctx.stroke();}
+  // Trend
+  if(hist.length>=3){
+    var n=hist.length,sX=0,sY=0,sXY=0,sXX=0;
+    hist.forEach(function(h,i){sX+=i;sY+=h.v;sXY+=i*h.v;sXX+=i*i;});
+    var sl=(n*sXY-sX*sY)/(n*sXX-sX*sX);
+    var ic=(sY-sl*sX)/n;
+    ctx.setLineDash([5,4]);ctx.strokeStyle='rgba(61,142,255,0.5)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(p.l,yS(ic));ctx.lineTo(p.l+gW,yS(sl*(n-1)+ic));ctx.stroke();ctx.setLineDash([]);
+    var diff=vals[vals.length-1]-vals[0];
+    ctx.fillStyle=diff>=0?'rgba(0,217,126,0.9)':'rgba(255,100,100,0.9)';
+    ctx.font='bold 9px monospace';ctx.textAlign='left';
+    ctx.fillText((diff>=0?'▲ +':'▼ ')+Math.abs(diff).toFixed(1)+'kg vs início',p.l,p.t-8);
+  }
+  // Area fill
+  var grad=ctx.createLinearGradient(0,p.t,0,H);
+  grad.addColorStop(0,'rgba(61,142,255,0.28)');grad.addColorStop(1,'rgba(61,142,255,0)');
+  ctx.beginPath();
+  hist.forEach(function(h,i){var x=p.l+i*xS,y=yS(h.v);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.lineTo(p.l+(hist.length-1)*xS,H-p.b);ctx.lineTo(p.l,H-p.b);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+  // Main line
+  ctx.beginPath();
+  hist.forEach(function(h,i){var x=p.l+i*xS,y=yS(h.v);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='#3D8EFF';ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();
+  // Points + labels
+  hist.forEach(function(h,i){
+    var x=p.l+i*xS,y=yS(h.v);
+    var isSpec=i===0||i===hist.length-1||i===maxIdx||i===minIdx||hist.length<=8;
+    var col=i===maxIdx?'#FF4D00':(i===minIdx?'#00D97E':'#3D8EFF');
+    ctx.beginPath();ctx.arc(x,y,isSpec?4.5:2.5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+    if(isSpec){
+      ctx.fillStyle=i===maxIdx?'rgba(255,77,0,0.95)':'rgba(200,220,255,0.9)';
+      ctx.font='bold 9px monospace';ctx.textAlign='center';
+      ctx.fillText(h.v+'kg',x,y-8);
+    }
+  });
+  // Date labels
+  ctx.fillStyle='rgba(150,150,150,0.5)';ctx.font='8px monospace';
+  ctx.textAlign='left';ctx.fillText(hist[0].d.slice(5),p.l,H-3);
+  ctx.textAlign='right';ctx.fillText(hist[hist.length-1].d.slice(5),W-p.r,H-3);
+}
+
+// ===== THEME =====
+function applyTheme(t){
+  if(t==='light')document.body.classList.add('light');
+  else document.body.classList.remove('light');
+  var btn=document.getElementById('theme-toggle-btn');
+  if(btn)btn.textContent=t==='light'?'☀️':'🌙';
+  var mc=document.querySelector('meta[name="theme-color"]');
+  if(mc)mc.setAttribute('content',t==='light'?'#F0F0F0':'#0a0a0a');
+}
+window.toggleTheme=function(){
+  var next=document.body.classList.contains('light')?'dark':'light';
+  localStorage.setItem('theme_pref',next);
+  applyTheme(next);
+};
+
 function jbSchedule(){clearTimeout(jbTimer);jbTimer=setTimeout(jbPush,3000);}
 window.toggleSyncPanel=function(){
   var panel=document.getElementById('sync-panel');
@@ -2198,6 +2354,7 @@ restoreExStates();
 updateNextBanner();
 initCardCounters();
 updateStreak();
+applyTheme(localStorage.getItem('theme_pref')||'dark');
 // Auto-sync na abertura
 (async function(){
   await jbPull();
