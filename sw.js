@@ -1,4 +1,4 @@
-var CACHE = 'mfit-v2';
+var CACHE = 'mfit-v4';
 var CORE = ['/treinos-emerson/', '/treinos-emerson/index.html'];
 
 self.addEventListener('install', function(e) {
@@ -16,6 +16,29 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
+  var url = e.request.url;
+
+  // Nunca cacheia requisições externas (JSONBin, APIs)
+  if (!url.startsWith(self.location.origin)) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
+
+  // HTML: network-first (garante versão atualizada)
+  if (url.endsWith('/') || url.includes('index.html')) {
+    e.respondWith(
+      fetch(e.request).then(function(res) {
+        var clone = res.clone();
+        caches.open(CACHE).then(function(c) { c.put(e.request, clone); });
+        return res;
+      }).catch(function() {
+        return caches.match(e.request);
+      })
+    );
+    return;
+  }
+
+  // Demais assets: cache-first com atualização em background
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       var network = fetch(e.request).then(function(res) {
