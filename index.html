@@ -2060,7 +2060,7 @@ function drawWChart(wts){
 
 // ===== SYNC AUTOMÁTICO (JSONBin — igual gastos-emerson) =====
 var JBIN='https://api.jsonbin.io/v3';
-var JB_KEY=localStorage.getItem('jbin_key')||'$2a$10$c4AOc1dzybK4RLd7Gu3AfORD0QLCrDGEqvEKfKqXZHDYFCD0rC8Eu';
+var JB_KEY='$2a$10$c4AOc1dzybK4RLd7Gu3AfORD0QLCrDGEqvEKfKqXZHDYFCD0rC8Eu';
 // migração: mover jbin_id legado para treinos_jbin_id
 (function(){var old=localStorage.getItem('jbin_id');if(old&&!localStorage.getItem('treinos_jbin_id')){localStorage.setItem('treinos_jbin_id',old);localStorage.removeItem('jbin_id');}})();
 var jblobId=localStorage.getItem('treinos_jbin_id')||'';
@@ -2073,6 +2073,7 @@ function jbSetUI(s,msg){
   if(st)st.textContent=msg||'';
   var sl=document.getElementById('sync-last');
   if(sl)sl.textContent=msg||'';
+  if(s==='error')console.error('[MFIT SYNC]',msg);
 }
 function jbCollect(){
   var d={ts:Date.now(),v:1,cargas:{},notes:{}};
@@ -2169,7 +2170,7 @@ async function jbPush(){
     }
     localStorage.setItem('treinos_sync_ts',String(data.ts));
     jbSetUI('ok','Sincronizado · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
-  }catch(e){jbSetUI('error','Erro: '+e.message);}
+  }catch(e){jbSetUI('error','Erro: '+e.message);showToast('Sync: '+e.message,4000);}
 }
 async function jbPull(){
   if(!JB_KEY||!jblobId)return;
@@ -2188,7 +2189,7 @@ async function jbPull(){
     }else{
       jbSetUI('ok','Já está em dia · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
     }
-  }catch(e){jbSetUI('error','Erro: '+e.message);}
+  }catch(e){jbSetUI('error','Erro: '+e.message);showToast('Sync: '+e.message,4000);}
 }
 window.jbForcePull=async function(){
   toggleSyncPanel();
@@ -2365,12 +2366,12 @@ function updateStreak(){
 }
 
 // TOAST
-function showToast(msg){
+function showToast(msg,dur){
   var t=document.getElementById('mfit-toast');
   if(!t){t=document.createElement('div');t.id='mfit-toast';t.className='toast';document.body.appendChild(t);}
   t.textContent=msg;t.classList.add('show');
   clearTimeout(t._timer);
-  t._timer=setTimeout(function(){t.classList.remove('show');},2500);
+  t._timer=setTimeout(function(){t.classList.remove('show');},(dur||2500));
 }
 
 // INIT
