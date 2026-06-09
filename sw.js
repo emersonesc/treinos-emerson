@@ -1,5 +1,5 @@
-var CACHE = 'mfit-v1';
-var CORE = ['/treinos-emerson/treino_emerson_4.html'];
+var CACHE = 'mfit-v2';
+var CORE = ['/treinos-emerson/', '/treinos-emerson/index.html'];
 
 self.addEventListener('install', function(e) {
   e.waitUntil(
