@@ -1,0 +1,25 @@
+{
+  "name": "MFIT · Emerson",
+  "short_name": "MFIT",
+  "description": "Treinos e bioimpedância — Emerson Soares",
+  "start_url": "/treinos-emerson/",
+  "scope": "/treinos-emerson/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080808",
+  "theme_color": "#080808",
+  "icons": [
+    {
+      "src": "/treinos-emerson/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/treinos-emerson/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

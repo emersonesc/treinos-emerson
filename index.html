@@ -4,11 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MFIT · Emerson</title>
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MFIT">
-<meta name="theme-color" content="#0a0a0a">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230a0a0a'/%3E%3Ctext x='256' y='340' font-family='Arial Black,sans-serif' font-size='260' font-weight='900' fill='%23FF4D00' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" sizes="180x180" href="/treinos-emerson/icon-180.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/treinos-emerson/icon-512.png">
+<link rel="manifest" href="/treinos-emerson/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <script>
 // Funções críticas declaradas antes do body renderizar
@@ -199,7 +202,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .tip-t strong{color:var(--text);}
 footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;}
 /* ── NAV BAR ── */
-.top-nav{position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(8,8,8,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 16px;}
+.top-nav{position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(8,8,8,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:env(safe-area-inset-top) 16px 0;}
 .top-nav-inner{max-width:780px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:52px;}
 .nav-logo{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent);}
 .nav-tabs{display:flex;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:100px;padding:4px;position:relative;z-index:9999;}
