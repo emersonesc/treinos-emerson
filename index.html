@@ -2414,6 +2414,9 @@ setTimeout(initFadeIn,200);
 // SERVICE WORKER (offline)
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/treinos-emerson/sw.js').catch(function(){});
+  navigator.serviceWorker.addEventListener('message', function(e){
+    if(e.data&&e.data.type==='SW_UPDATED') location.reload();
+  });
 }
 </script>
 </body></html>
