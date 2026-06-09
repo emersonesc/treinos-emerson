@@ -587,8 +587,18 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
       <button class="sync-btn" onclick="jbForcePull();">Baixar da nuvem</button>
     </div>
     <div class="sync-last" id="sync-last"></div>
-    <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
-      <div style="flex:1;font-size:11px;color:var(--text3);">JSONBin ativo · <span id="sync-bin-id" style="font-family:var(--mono);font-size:10px;"></span></div>
+    <!-- Conectar aparelhos -->
+    <div id="sync-pair-section" style="margin-top:14px;padding:12px;background:var(--surface3);border-radius:10px;border:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;font-family:var(--mono);letter-spacing:.5px;">📱 CONECTAR APARELHOS</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5;">No computador: toque <strong>Compartilhar link</strong> e abra no celular.</div>
+      <button id="share-link-btn" onclick="shareSyncLink()" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;margin-bottom:8px;display:none;">🔗 Compartilhar link</button>
+      <div style="display:flex;gap:6px;">
+        <input id="restore-code-input" type="text" placeholder="Cole o ID do bin aqui" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);">
+        <button onclick="jbRestoreCode()" style="padding:8px 12px;border-radius:8px;border:none;background:var(--green);color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--mono);">OK</button>
+      </div>
+      <div id="sync-bin-id-row" style="margin-top:8px;font-size:10px;color:var(--text3);font-family:var(--mono);">ID: <span id="sync-bin-id"></span></div>
+    </div>
+    <div style="margin-top:10px;text-align:right;">
       <button onclick="jbResetKey()" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--mono);">Desconectar</button>
     </div>
   </div>
@@ -2063,6 +2073,8 @@ var JBIN='https://api.jsonbin.io/v3';
 var JB_KEY='$2a$10$c4AOc1dzybK4RLd7Gu3AfORD0QLCrDGEqvEKfKqXZHDYFCD0rC8Eu';
 // migração: mover jbin_id legado para treinos_jbin_id
 (function(){var old=localStorage.getItem('jbin_id');if(old&&!localStorage.getItem('treinos_jbin_id')){localStorage.setItem('treinos_jbin_id',old);localStorage.removeItem('jbin_id');}})();
+// conectar aparelhos via ?bid= na URL
+(function(){var p=new URLSearchParams(location.search);var bid=p.get('bid');if(bid){localStorage.setItem('treinos_jbin_id',bid);history.replaceState(null,'',location.pathname);}})();
 var jblobId=localStorage.getItem('treinos_jbin_id')||'';
 var jbTimer=null;
 
@@ -2121,8 +2133,9 @@ function jbUpdateCodeUI(){
   if(setup)setup.style.display=hasKey?'none':'block';
   if(active)active.style.display=hasKey?'block':'none';
   var binEl=document.getElementById('sync-bin-id');
-  if(binEl)binEl.textContent=jblobId?(jblobId.slice(-8)):'–';
-  // also update nav dot state
+  if(binEl)binEl.textContent=jblobId?jblobId:'–';
+  var shareBtn=document.getElementById('share-link-btn');
+  if(shareBtn)shareBtn.style.display=jblobId?'block':'none';
   if(!hasKey){var dots=[document.getElementById('sync-dot'),document.getElementById('sync-dot2')];dots.forEach(function(d){if(d)d.className='sync-dot';});}
 }
 window.jbSaveKey=function(){
@@ -2198,6 +2211,12 @@ window.jbForcePull=async function(){
 window.copySyncCode=function(){
   if(!jblobId)return;
   navigator.clipboard.writeText(jblobId).then(function(){showToast('Código copiado!');}).catch(function(){});
+};
+window.shareSyncLink=function(){
+  if(!jblobId){showToast('Sem bin ainda — sincronize primeiro');return;}
+  var url=location.origin+location.pathname+'?bid='+jblobId;
+  if(navigator.share){navigator.share({title:'MFIT — conectar aparelho',url:url}).catch(function(){});}
+  else{navigator.clipboard.writeText(url).then(function(){showToast('Link copiado! Abra no celular.');}).catch(function(){showToast(url);});}
 };
 window.toggleRestoreSection=function(){
   var s=document.getElementById('restore-section');
