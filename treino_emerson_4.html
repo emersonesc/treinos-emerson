@@ -563,15 +563,20 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
   <div class="sync-panel-handle"></div>
   <div class="sync-panel-title">☁️ Sincronização automática</div>
 
-  <!-- Estado: sem chave -->
+  <!-- Estado: sem token -->
   <div id="sync-setup" style="display:none;">
-    <div style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.5;">Cole sua <strong style="color:var(--text);">Master Key</strong> do JSONBin.io para ativar o sync automático entre celular e computador.</div>
-    <input id="jbin-key-input" type="password" placeholder="$2a$10$..." style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--surface3);color:var(--text);font-size:13px;font-family:var(--mono);margin-bottom:10px;">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;">Para sincronizar entre celular e computador, cole um <strong style="color:var(--text);">token do GitHub</strong> (você já tem conta).</div>
+    <input id="gh-token-input" type="password" placeholder="ghp_..." style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--surface3);color:var(--text);font-size:13px;font-family:var(--mono);margin-bottom:10px;">
     <button onclick="jbSaveKey()" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Ativar sync</button>
-    <div style="font-size:11px;color:var(--text3);margin-top:10px;text-align:center;">Crie conta grátis em <strong>jsonbin.io</strong> → API Keys → Master Key</div>
+    <div style="margin-top:12px;padding:10px 12px;background:var(--surface3);border-radius:8px;font-size:11px;color:var(--text3);line-height:1.6;">
+      <strong style="color:var(--text2);">Como gerar o token (1 min):</strong><br>
+      github.com → Settings → Developer settings<br>
+      → Personal access tokens → Tokens (classic)<br>
+      → Generate new token → marque só <strong style="color:var(--text2);">gist</strong> → Generate
+    </div>
   </div>
 
-  <!-- Estado: com chave -->
+  <!-- Estado: com token -->
   <div id="sync-active" style="display:none;">
     <div class="sync-status-row">
       <span class="sync-dot" id="sync-dot2"></span>
@@ -583,8 +588,8 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
     </div>
     <div class="sync-last" id="sync-last"></div>
     <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
-      <div style="flex:1;font-size:11px;color:var(--text3);">JSONBin ativo · <span id="sync-bin-id" style="font-family:var(--mono);"></span></div>
-      <button onclick="jbResetKey()" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--mono);">Trocar chave</button>
+      <div style="flex:1;font-size:11px;color:var(--text3);">GitHub Gist ativo · <span id="sync-bin-id" style="font-family:var(--mono);font-size:10px;"></span></div>
+      <button onclick="jbResetKey()" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--mono);">Desconectar</button>
     </div>
   </div>
 </div>
@@ -2038,10 +2043,10 @@ function drawWChart(wts){
   });
 }
 
-// ===== SYNC AUTOMÁTICO (JSONBin) =====
-var JBIN='https://api.jsonbin.io/v3';
-var JB_KEY=localStorage.getItem('jbin_key')||'';
-var jblobId=localStorage.getItem('jbin_id')||'';
+// ===== SYNC AUTOMÁTICO (GitHub Gist) =====
+var GH_API='https://api.github.com';
+var JB_KEY=localStorage.getItem('gh_token')||'';
+var jblobId=localStorage.getItem('gist_id')||'';
 var jbTimer=null;
 
 function jbSetUI(s,msg){
@@ -2096,27 +2101,26 @@ function jbUpdateCodeUI(){
   if(setup)setup.style.display=hasKey?'none':'block';
   if(active)active.style.display=hasKey?'block':'none';
   var binEl=document.getElementById('sync-bin-id');
-  if(binEl)binEl.textContent=jblobId?jblobId.slice(-8):'–';
+  if(binEl)binEl.textContent=jblobId?('gist/'+jblobId.slice(0,8)+'...'):'–';
   // also update nav dot state
   if(!hasKey){var dots=[document.getElementById('sync-dot'),document.getElementById('sync-dot2')];dots.forEach(function(d){if(d)d.className='sync-dot';});}
 }
 window.jbSaveKey=function(){
-  var inp=document.getElementById('jbin-key-input');
+  var inp=document.getElementById('gh-token-input');
   if(!inp)return;
   var k=inp.value.trim();
-  if(!k){showToast('Cole a chave primeiro');return;}
+  if(!k){showToast('Cole o token primeiro');return;}
   JB_KEY=k;
-  localStorage.setItem('jbin_key',k);
+  localStorage.setItem('gh_token',k);
   inp.value='';
   jbUpdateCodeUI();
   jbPush();
 };
 window.jbResetKey=function(){
-  if(!confirm('Remover chave e desativar sync?'))return;
-  JB_KEY='';
-  jblobId='';
-  localStorage.removeItem('jbin_key');
-  localStorage.removeItem('jbin_id');
+  if(!confirm('Desconectar GitHub e desativar sync?'))return;
+  JB_KEY='';jblobId='';
+  localStorage.removeItem('gh_token');
+  localStorage.removeItem('gist_id');
   jbUpdateCodeUI();
   jbSetUI('','Sync desativado');
 };
@@ -2125,22 +2129,20 @@ async function jbPush(){
   jbSetUI('syncing','Sincronizando...');
   try{
     var data=jbCollect();
+    var hdrs={'Content-Type':'application/json','Accept':'application/vnd.github+json','Authorization':'Bearer '+JB_KEY};
+    var fileBody=JSON.stringify({files:{'mfit.json':{content:JSON.stringify(data)}}});
     if(!jblobId){
-      var r=await fetch(JBIN+'/b',{
+      var r=await fetch(GH_API+'/gists',{
         method:'POST',
-        headers:{'Content-Type':'application/json','X-Master-Key':JB_KEY,'X-Bin-Name':'treinos-emerson'},
-        body:JSON.stringify(data)
+        headers:hdrs,
+        body:JSON.stringify({description:'MFIT treinos-emerson',public:false,files:{'mfit.json':{content:JSON.stringify(data)}}})
       });
       if(!r.ok){var eb=await r.text().catch(function(){return '';});throw new Error(r.status+' '+eb.slice(0,80));}
       var j=await r.json();
-      jblobId=(j.metadata&&j.metadata.id)||'';
-      if(jblobId){localStorage.setItem('jbin_id',jblobId);jbUpdateCodeUI();}
+      jblobId=j.id||'';
+      if(jblobId){localStorage.setItem('gist_id',jblobId);jbUpdateCodeUI();}
     }else{
-      var r2=await fetch(JBIN+'/b/'+jblobId,{
-        method:'PUT',
-        headers:{'Content-Type':'application/json','X-Master-Key':JB_KEY},
-        body:JSON.stringify(data)
-      });
+      var r2=await fetch(GH_API+'/gists/'+jblobId,{method:'PATCH',headers:hdrs,body:fileBody});
       if(!r2.ok){var eb2=await r2.text().catch(function(){return '';});throw new Error(r2.status+' '+eb2.slice(0,80));}
     }
     localStorage.setItem('sync_ts',String(data.ts));
@@ -2151,11 +2153,14 @@ async function jbPull(){
   if(!JB_KEY||!jblobId)return;
   jbSetUI('syncing','Buscando dados...');
   try{
-    var r=await fetch(JBIN+'/b/'+jblobId+'/latest',{headers:{'X-Master-Key':JB_KEY}});
-    if(r.status===404){jblobId='';localStorage.removeItem('jbin_id');await jbPush();return;}
+    var r=await fetch(GH_API+'/gists/'+jblobId,{headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+JB_KEY}});
+    if(r.status===404){jblobId='';localStorage.removeItem('gist_id');await jbPush();return;}
     if(!r.ok){var eb=await r.text().catch(function(){return '';});throw new Error(r.status+' '+eb.slice(0,80));}
     var j=await r.json();
-    var applied=jbApply(j.record);
+    var raw=j.files&&j.files['mfit.json']&&j.files['mfit.json'].content;
+    if(!raw)throw new Error('Sem dados');
+    var d=JSON.parse(raw);
+    var applied=jbApply(d);
     if(applied)jbRerender();
     jbSetUI('ok',(applied?'Dados atualizados':'Já está em dia')+' · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
   }catch(e){jbSetUI('error','Erro: '+e.message);}
@@ -2178,7 +2183,7 @@ window.jbRestoreCode=async function(){
   var code=input.value.trim();
   if(!code)return;
   jblobId=code;
-  localStorage.setItem('jbin_id',code);
+  localStorage.setItem('gist_id',code);
   jbUpdateCodeUI();
   input.value='';
   document.getElementById('restore-section').style.display='none';
