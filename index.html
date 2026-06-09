@@ -1888,12 +1888,27 @@ window.goToNextTraining=function(){
 // DONE / HISTORY
 var done=new Set();
 var curM=1;
+function saveDone(){S.set('done_ids',[...done]);}
+function restoreDoneCards(){
+  var ids=S.get('done_ids')||[];
+  ids.forEach(function(id){
+    done.add(id);
+    var card=document.querySelector('[data-tid="'+id+'"]');
+    if(card){
+      card.classList.add('completed');
+      var btn=card.querySelector('.check-btn');
+      if(btn)btn.classList.add('checked');
+    }
+  });
+  updCount();
+}
 window.markDone=function(e,id){
   e.stopPropagation();
   var card=document.querySelector('[data-tid="'+id+'"]');
   var btn=e.currentTarget;
   if(done.has(id)){done.delete(id);card.classList.remove('completed');btn.classList.remove('checked');rmTrainDay();}
   else{done.add(id);card.classList.add('completed');btn.classList.add('checked');beep(660,0.08);setTimeout(function(){beep(880,0.1);},100);try{navigator.vibrate([30,20,60]);}catch(e){}addTrainDay();S.set('last_done_tid',id);}
+  saveDone();
   updCount();
   updateNextBanner();
   updateStreak();
@@ -2066,6 +2081,7 @@ function jbCollect(){
     else if(k.startsWith('note_'))d.notes[k]=localStorage.getItem(k);
   }
   var ltd=localStorage.getItem('last_done_tid');if(ltd)d.last_done_tid=ltd;
+  d.done_ids=S.get('done_ids')||[];
   d.trained_days=S.get('trained_days')||[];
   d.weights=S.get('weights')||[];
   return d;
@@ -2077,13 +2093,14 @@ function jbApply(d){
   if(d.cargas)Object.keys(d.cargas).forEach(function(k){localStorage.setItem(k,d.cargas[k]);});
   if(d.notes)Object.keys(d.notes).forEach(function(k){localStorage.setItem(k,d.notes[k]);});
   if(d.last_done_tid)localStorage.setItem('last_done_tid',d.last_done_tid);
+  if(d.done_ids)S.set('done_ids',d.done_ids);
   if(d.trained_days)S.set('trained_days',d.trained_days);
   if(d.weights)S.set('weights',d.weights);
   localStorage.setItem('sync_ts',String(d.ts));
   return true;
 }
 function jbRerender(){
-  restoreExStates();updateNextBanner();renderCal();renderWeights();
+  restoreExStates();restoreDoneCards();updateNextBanner();renderCal();renderWeights();
   document.querySelectorAll('.train-card.open').forEach(function(c){
     var tid=c.dataset.tid;
     c.querySelectorAll('.carga-inp').forEach(function(inp,idx){
@@ -2359,6 +2376,7 @@ updCount();
 renderCal();
 renderWeights();
 restoreExStates();
+restoreDoneCards();
 updateNextBanner();
 initCardCounters();
 updateStreak();
