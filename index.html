@@ -547,6 +547,9 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 
+<!-- SYNC ERROR BANNER -->
+<div id="sync-error-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;background:#c0392b;color:#fff;font-size:12px;font-family:monospace;padding:6px 12px;text-align:center;"></div>
+
 <!-- TOP NAV -->
 <nav class="top-nav">
   <div class="top-nav-inner">
@@ -2095,7 +2098,13 @@ function jbSetUI(s,msg){
     else if(s==='syncing')nl.textContent='⟳';
     else nl.textContent='';
   }
-  if(s==='error'){console.error('[MFIT SYNC]',msg);showToast('Sync: '+msg,4000);}
+  var banner=document.getElementById('sync-error-banner');
+  if(s==='error'){
+    console.error('[MFIT SYNC]',msg);
+    if(banner){banner.textContent='⚠️ Sync: '+msg+' — toque ☁️ para tentar de novo';banner.style.display='block';}
+  }else if(s==='ok'){
+    if(banner)banner.style.display='none';
+  }
 }
 function jbCollect(){
   var d={ts:Date.now(),v:1,cargas:{},notes:{}};
@@ -2112,16 +2121,18 @@ function jbCollect(){
   return d;
 }
 function jbApply(d){
-  if(!d||!d.ts)return false;
+  if(!d)return false;
+  var dTs=d._savedAt||d.ts||0;
+  if(!dTs)return false;
   var localTs=parseInt(localStorage.getItem('treinos_sync_ts')||'0');
-  if(d.ts<=localTs)return false;
+  if(dTs<=localTs)return false;
   if(d.cargas)Object.keys(d.cargas).forEach(function(k){localStorage.setItem(k,d.cargas[k]);});
   if(d.notes)Object.keys(d.notes).forEach(function(k){localStorage.setItem(k,d.notes[k]);});
   if(d.last_done_tid)localStorage.setItem('last_done_tid',d.last_done_tid);
   if(d.done_ids)S.set('done_ids',d.done_ids);
   if(d.trained_days)S.set('trained_days',d.trained_days);
   if(d.weights)S.set('weights',d.weights);
-  localStorage.setItem('treinos_sync_ts',String(d.ts));
+  localStorage.setItem('treinos_sync_ts',String(dTs));
   return true;
 }
 function jbRerender(){
@@ -2204,13 +2215,15 @@ async function jbPull(){
     if(!r.ok){var eb=await r.text().catch(function(){return '';});throw new Error(r.status+' '+eb.slice(0,80));}
     var j=await r.json();
     var cloudData=j.record;
+    var cloudTs=cloudData._savedAt||cloudData.ts||0;
     var localTs=parseInt(localStorage.getItem('treinos_sync_ts')||'0');
-    if(cloudData._savedAt&&cloudData._savedAt>localTs){
+    if(cloudTs>localTs){
+      cloudData._savedAt=cloudTs;
       var applied=jbApply(cloudData);
       if(applied)jbRerender();
-      jbSetUI('ok','Dados atualizados · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+      jbSetUI('ok','Atualizado · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
     }else{
-      jbSetUI('ok','Já está em dia · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+      jbSetUI('ok','Em dia · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
     }
   }catch(e){jbSetUI('error','Erro: '+e.message);showToast('Sync: '+e.message,4000);}
 }
