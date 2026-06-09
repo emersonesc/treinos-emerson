@@ -562,26 +562,29 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 <div class="sync-panel" id="sync-panel">
   <div class="sync-panel-handle"></div>
   <div class="sync-panel-title">☁️ Sincronização automática</div>
-  <div class="sync-status-row">
-    <span class="sync-dot" id="sync-dot2"></span>
-    <span class="sync-status-text" id="sync-status-text">Verificando...</span>
+
+  <!-- Estado: sem chave -->
+  <div id="sync-setup" style="display:none;">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.5;">Cole sua <strong style="color:var(--text);">Master Key</strong> do JSONBin.io para ativar o sync automático entre celular e computador.</div>
+    <input id="jbin-key-input" type="password" placeholder="$2a$10$..." style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--surface3);color:var(--text);font-size:13px;font-family:var(--mono);margin-bottom:10px;">
+    <button onclick="jbSaveKey()" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Ativar sync</button>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px;text-align:center;">Crie conta grátis em <strong>jsonbin.io</strong> → API Keys → Master Key</div>
   </div>
-  <div class="sync-actions">
-    <button class="sync-btn primary" onclick="jbPush();toggleSyncPanel();">Enviar agora</button>
-    <button class="sync-btn" onclick="jbForcePull();">Baixar da nuvem</button>
-  </div>
-  <div class="sync-last" id="sync-last"></div>
-  <div style="margin-top:14px;padding:12px 14px;background:var(--surface3);border:1px solid var(--border);border-radius:10px;">
-    <div style="font-size:10px;color:var(--text3);font-family:var(--mono);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Código de backup</div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <code id="sync-code-display" style="font-family:var(--mono);font-size:11px;color:var(--text2);flex:1;word-break:break-all;">–</code>
-      <button onclick="copySyncCode()" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-family:var(--mono);white-space:nowrap;">Copiar</button>
+
+  <!-- Estado: com chave -->
+  <div id="sync-active" style="display:none;">
+    <div class="sync-status-row">
+      <span class="sync-dot" id="sync-dot2"></span>
+      <span class="sync-status-text" id="sync-status-text">Verificando...</span>
     </div>
-    <div style="font-size:11px;color:var(--text3);margin-top:6px;">Use para recuperar dados em outro dispositivo</div>
-    <div style="margin-top:10px;"><button onclick="toggleRestoreSection()" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--mono);">Restaurar de outro dispositivo</button></div>
-    <div id="restore-section" style="display:none;margin-top:10px;">
-      <input id="restore-code-input" type="text" placeholder="Cole o código aqui" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:13px;font-family:var(--mono);">
-      <button onclick="jbRestoreCode()" style="margin-top:8px;width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;">Restaurar</button>
+    <div class="sync-actions">
+      <button class="sync-btn primary" onclick="jbPush();toggleSyncPanel();">Enviar agora</button>
+      <button class="sync-btn" onclick="jbForcePull();">Baixar da nuvem</button>
+    </div>
+    <div class="sync-last" id="sync-last"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+      <div style="flex:1;font-size:11px;color:var(--text3);">JSONBin ativo · <span id="sync-bin-id" style="font-family:var(--mono);"></span></div>
+      <button onclick="jbResetKey()" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--mono);">Trocar chave</button>
     </div>
   </div>
 </div>
@@ -2037,7 +2040,7 @@ function drawWChart(wts){
 
 // ===== SYNC AUTOMÁTICO (JSONBin) =====
 var JBIN='https://api.jsonbin.io/v3';
-var JB_KEY='$2a$10$l38f1SWz8bzAPoPX/jc5kOgT8m/J3bXs/3t9IuW/fu.aGQLhrhqoq';
+var JB_KEY=localStorage.getItem('jbin_key')||'';
 var jblobId=localStorage.getItem('jbin_id')||'';
 var jbTimer=null;
 
@@ -2087,10 +2090,38 @@ function jbRerender(){
   });
 }
 function jbUpdateCodeUI(){
-  var el=document.getElementById('sync-code-display');
-  if(el)el.textContent=jblobId||'–';
+  var hasKey=!!JB_KEY;
+  var setup=document.getElementById('sync-setup');
+  var active=document.getElementById('sync-active');
+  if(setup)setup.style.display=hasKey?'none':'block';
+  if(active)active.style.display=hasKey?'block':'none';
+  var binEl=document.getElementById('sync-bin-id');
+  if(binEl)binEl.textContent=jblobId?jblobId.slice(-8):'–';
+  // also update nav dot state
+  if(!hasKey){var dots=[document.getElementById('sync-dot'),document.getElementById('sync-dot2')];dots.forEach(function(d){if(d)d.className='sync-dot';});}
 }
+window.jbSaveKey=function(){
+  var inp=document.getElementById('jbin-key-input');
+  if(!inp)return;
+  var k=inp.value.trim();
+  if(!k){showToast('Cole a chave primeiro');return;}
+  JB_KEY=k;
+  localStorage.setItem('jbin_key',k);
+  inp.value='';
+  jbUpdateCodeUI();
+  jbPush();
+};
+window.jbResetKey=function(){
+  if(!confirm('Remover chave e desativar sync?'))return;
+  JB_KEY='';
+  jblobId='';
+  localStorage.removeItem('jbin_key');
+  localStorage.removeItem('jbin_id');
+  jbUpdateCodeUI();
+  jbSetUI('','Sync desativado');
+};
 async function jbPush(){
+  if(!JB_KEY){jbUpdateCodeUI();return;}
   jbSetUI('syncing','Sincronizando...');
   try{
     var data=jbCollect();
@@ -2117,7 +2148,7 @@ async function jbPush(){
   }catch(e){jbSetUI('error','Erro: '+e.message);}
 }
 async function jbPull(){
-  if(!jblobId)return;
+  if(!JB_KEY||!jblobId)return;
   jbSetUI('syncing','Buscando dados...');
   try{
     var r=await fetch(JBIN+'/b/'+jblobId+'/latest',{headers:{'X-Master-Key':JB_KEY}});
@@ -2321,6 +2352,7 @@ updateNextBanner();
 initCardCounters();
 updateStreak();
 applyTheme(localStorage.getItem('theme_pref')||'dark');
+jbUpdateCodeUI();
 // Auto-sync na abertura
 (async function(){
   await jbPull();
