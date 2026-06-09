@@ -2411,12 +2411,9 @@ jbUpdateCodeUI();
 })();
 document.querySelectorAll('.train-card,.bio-card,.score-card,.bio-stats-4,.weight-card,.calendar-card,.week-counter-card').forEach(function(el){el.classList.add('fade-in');});
 setTimeout(initFadeIn,200);
-// SERVICE WORKER (offline)
+// Remove SW antigo se existir
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/treinos-emerson/sw.js').catch(function(){});
-  navigator.serviceWorker.addEventListener('message', function(e){
-    if(e.data&&e.data.type==='SW_UPDATED') location.reload();
-  });
 }
 </script>
 </body></html>
