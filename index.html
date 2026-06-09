@@ -2061,7 +2061,9 @@ function drawWChart(wts){
 // ===== SYNC AUTOMÁTICO (JSONBin — igual gastos-emerson) =====
 var JBIN='https://api.jsonbin.io/v3';
 var JB_KEY=localStorage.getItem('jbin_key')||'$2a$10$c4AOc1dzybK4RLd7Gu3AfORD0QLCrDGEqvEKfKqXZHDYFCD0rC8Eu';
-var jblobId=localStorage.getItem('jbin_id')||'';
+// migração: mover jbin_id legado para treinos_jbin_id
+(function(){var old=localStorage.getItem('jbin_id');if(old&&!localStorage.getItem('treinos_jbin_id')){localStorage.setItem('treinos_jbin_id',old);localStorage.removeItem('jbin_id');}})();
+var jblobId=localStorage.getItem('treinos_jbin_id')||'';
 var jbTimer=null;
 
 function jbSetUI(s,msg){
@@ -2088,7 +2090,7 @@ function jbCollect(){
 }
 function jbApply(d){
   if(!d||!d.ts)return false;
-  var localTs=parseInt(localStorage.getItem('sync_ts')||'0');
+  var localTs=parseInt(localStorage.getItem('treinos_sync_ts')||'0');
   if(d.ts<=localTs)return false;
   if(d.cargas)Object.keys(d.cargas).forEach(function(k){localStorage.setItem(k,d.cargas[k]);});
   if(d.notes)Object.keys(d.notes).forEach(function(k){localStorage.setItem(k,d.notes[k]);});
@@ -2096,7 +2098,7 @@ function jbApply(d){
   if(d.done_ids)S.set('done_ids',d.done_ids);
   if(d.trained_days)S.set('trained_days',d.trained_days);
   if(d.weights)S.set('weights',d.weights);
-  localStorage.setItem('sync_ts',String(d.ts));
+  localStorage.setItem('treinos_sync_ts',String(d.ts));
   return true;
 }
 function jbRerender(){
@@ -2137,7 +2139,7 @@ window.jbResetKey=function(){
   if(!confirm('Desconectar GitHub e desativar sync?'))return;
   JB_KEY='';jblobId='';
   localStorage.removeItem('jbin_key');
-  localStorage.removeItem('jbin_id');
+  localStorage.removeItem('treinos_jbin_id');
   jbUpdateCodeUI();
   jbSetUI('','Sync desativado');
 };
@@ -2156,7 +2158,7 @@ async function jbPush(){
       if(!r.ok){var eb=await r.text().catch(function(){return '';});throw new Error(r.status+' '+eb.slice(0,80));}
       var j=await r.json();
       jblobId=(j.metadata&&j.metadata.id)||'';
-      if(jblobId){localStorage.setItem('jbin_id',jblobId);jbUpdateCodeUI();}
+      if(jblobId){localStorage.setItem('treinos_jbin_id',jblobId);jbUpdateCodeUI();}
     }else{
       var r2=await fetch(JBIN+'/b/'+jblobId,{
         method:'PUT',
@@ -2165,7 +2167,7 @@ async function jbPush(){
       });
       if(!r2.ok){var eb2=await r2.text().catch(function(){return '';});throw new Error(r2.status+' '+eb2.slice(0,80));}
     }
-    localStorage.setItem('sync_ts',String(data.ts));
+    localStorage.setItem('treinos_sync_ts',String(data.ts));
     jbSetUI('ok','Sincronizado · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
   }catch(e){jbSetUI('error','Erro: '+e.message);}
 }
@@ -2174,11 +2176,11 @@ async function jbPull(){
   jbSetUI('syncing','Buscando dados...');
   try{
     var r=await fetch(JBIN+'/b/'+jblobId+'/latest',{headers:{'X-Master-Key':JB_KEY}});
-    if(r.status===404){jblobId='';localStorage.removeItem('jbin_id');await jbPush();return;}
+    if(r.status===404){jblobId='';localStorage.removeItem('treinos_jbin_id');await jbPush();return;}
     if(!r.ok){var eb=await r.text().catch(function(){return '';});throw new Error(r.status+' '+eb.slice(0,80));}
     var j=await r.json();
     var cloudData=j.record;
-    var localTs=parseInt(localStorage.getItem('sync_ts')||'0');
+    var localTs=parseInt(localStorage.getItem('treinos_sync_ts')||'0');
     if(cloudData._savedAt&&cloudData._savedAt>localTs){
       var applied=jbApply(cloudData);
       if(applied)jbRerender();
@@ -2206,7 +2208,7 @@ window.jbRestoreCode=async function(){
   var code=input.value.trim();
   if(!code)return;
   jblobId=code;
-  localStorage.setItem('jbin_id',code);
+  localStorage.setItem('treinos_jbin_id',code);
   jbUpdateCodeUI();
   input.value='';
   document.getElementById('restore-section').style.display='none';
