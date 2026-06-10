@@ -2077,11 +2077,12 @@ function drawWChart(wts){
 // ===== SYNC AUTOMÁTICO (JSONBin — igual gastos-emerson) =====
 var JBIN='https://api.jsonbin.io/v3';
 var JB_KEY='$2a$10$c4AOc1dzybK4RLd7Gu3AfORD0QLCrDGEqvEKfKqXZHDYFCD0rC8Eu';
-// migração: mover jbin_id legado para treinos_jbin_id
-(function(){var old=localStorage.getItem('jbin_id');if(old&&!localStorage.getItem('treinos_jbin_id')){localStorage.setItem('treinos_jbin_id',old);localStorage.removeItem('jbin_id');}})();
+var JB_BIN='6a27a442f5f4af5e29cfa675';
 // conectar aparelhos via ?bid= na URL
 (function(){var p=new URLSearchParams(location.search);var bid=p.get('bid');if(bid){localStorage.setItem('treinos_jbin_id',bid);history.replaceState(null,'',location.pathname);}})();
-var jblobId=localStorage.getItem('treinos_jbin_id')||'';
+// sempre usa o bin fixo se não tiver outro salvo
+if(!localStorage.getItem('treinos_jbin_id'))localStorage.setItem('treinos_jbin_id',JB_BIN);
+var jblobId=localStorage.getItem('treinos_jbin_id')||JB_BIN;
 var jbTimer=null;
 
 function jbSetUI(s,msg){
