@@ -2462,15 +2462,6 @@ function showToast(msg,dur){
   t._timer=setTimeout(function(){t.classList.remove('show');},(dur||2500));
 }
 
-// Seed histórico: dias registrados manualmente pelo usuário
-if(!localStorage.getItem('cal_seed_v1')){
-  var _sd=getTD();
-  if(!_sd['2026-06-08'])_sd['2026-06-08']=['m1-t2'];
-  if(!_sd['2026-06-09'])_sd['2026-06-09']=['m1-t3'];
-  S.set('trained_days',_sd);
-  localStorage.setItem('cal_seed_v1','1');
-}
-
 // INIT
 updCount();
 renderCal();
@@ -2485,6 +2476,16 @@ jbUpdateCodeUI();
 // Auto-sync na abertura
 (async function(){
   await jbPull();
+  // Seed histórico: roda depois do pull para não ser sobrescrito pela nuvem
+  if(!localStorage.getItem('cal_seed_v2')){
+    var _sd=getTD();
+    var changed=false;
+    if(!_sd['2026-06-08']){_sd['2026-06-08']=['m1-t2'];changed=true;}
+    if(!_sd['2026-06-09']){_sd['2026-06-09']=['m1-t3'];changed=true;}
+    if(changed){S.set('trained_days',_sd);renderCal();}
+    localStorage.setItem('cal_seed_v2','1');
+    await jbPush();
+  }
   if(!jblobId)await jbPush();
 })();
 // Pull quando janela/app volta ao foco
