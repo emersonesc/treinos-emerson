@@ -237,13 +237,14 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 .cal-btn:hover{border-color:var(--accent);color:var(--accent);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
 .cal-day-name{text-align:center;font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;padding:4px 0;}
-.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:6px;font-family:var(--mono);font-size:11px;color:var(--text3);cursor:pointer;transition:all .15s;background:transparent;}
+.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:6px;font-family:var(--mono);font-size:11px;color:var(--text3);cursor:pointer;transition:all .15s;background:transparent;}
 .cal-day:hover{background:var(--surface2);}
 .cal-day.today{color:var(--text);font-weight:700;border:1px solid var(--border2);}
 .cal-day.trained{background:var(--accent);color:#fff;}
 .cal-day.trained:hover{background:var(--accent2);}
 .cal-day.other-month{opacity:.25;}
 .cal-day.empty{cursor:default;}
+.cal-day-tid{font-size:7px;font-weight:700;line-height:1;opacity:.9;letter-spacing:.5px;}
 .cal-streak{margin-top:12px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);}
 .cal-streak span{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--orange);}
 
@@ -1258,6 +1259,17 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
   <div class="cal-streak">🔥 Sequência atual: <span id="cal-streak">0</span> dias</div>
 </div>
 
+<div id="cal-day-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:9000;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;max-width:320px;width:calc(100% - 32px);">
+    <div id="cdm-date" style="font-family:var(--display);font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;"></div>
+    <div id="cdm-list" style="margin-bottom:16px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="calDayRemove()" style="flex:1;padding:10px;background:transparent;border:1px solid rgba(255,77,0,.35);border-radius:8px;color:var(--accent);cursor:pointer;font-size:12px;font-family:var(--body);">Remover dia</button>
+      <button onclick="document.getElementById('cal-day-modal').style.display='none'" style="flex:1;padding:10px;background:var(--surface3);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:12px;font-family:var(--body);">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div class="weight-card fade-in">
   <div class="weight-header">
     <div class="weight-title">Progresso de Peso</div>
@@ -1922,8 +1934,8 @@ window.markDone=function(e,id){
   e.stopPropagation();
   var card=document.querySelector('[data-tid="'+id+'"]');
   var btn=e.currentTarget;
-  if(done.has(id)){done.delete(id);card.classList.remove('completed');btn.classList.remove('checked');rmTrainDay();}
-  else{done.add(id);card.classList.add('completed');btn.classList.add('checked');beep(660,0.08);setTimeout(function(){beep(880,0.1);},100);try{navigator.vibrate([30,20,60]);}catch(e){}addTrainDay();S.set('last_done_tid',id);}
+  if(done.has(id)){done.delete(id);card.classList.remove('completed');btn.classList.remove('checked');rmTrainDay(id);}
+  else{done.add(id);card.classList.add('completed');btn.classList.add('checked');beep(660,0.08);setTimeout(function(){beep(880,0.1);},100);try{navigator.vibrate([30,20,60]);}catch(e){}addTrainDay(id);S.set('last_done_tid',id);}
   saveDone();
   updCount();
   updateNextBanner();
@@ -1953,11 +1965,43 @@ window.selectMonth=function(n){
 
 // CALENDAR
 var calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
-function getTD(){return S.get('trained_days')||[];}
-function addTrainDay(){var days=getTD();var t=new Date().toISOString().split('T')[0];if(!days.includes(t)){days.push(t);S.set('trained_days',days);}renderCal();}
-function rmTrainDay(){if(done.size===0){var days=getTD();var t=new Date().toISOString().split('T')[0];var i=days.indexOf(t);if(i>-1){days.splice(i,1);S.set('trained_days',days);}renderCal();}}
+function getTD(){
+  var raw=S.get('trained_days');
+  if(Array.isArray(raw)){var obj={};raw.forEach(function(d){obj[d]=[];});S.set('trained_days',obj);return obj;}
+  return raw||{};
+}
+function tidToLabel(tid){var m=tid.match(/t(\d+)$/i);return m?'T'+m[1]:tid.toUpperCase();}
+function tidToName(tid){var c=document.querySelector('[data-tid="'+tid+'"]');return c?c.querySelector('.t-name').textContent:'';}
+function addTrainDay(tid){var days=getTD();var t=new Date().toISOString().split('T')[0];if(!days[t])days[t]=[];if(tid&&!days[t].includes(tid))days[t].push(tid);S.set('trained_days',days);renderCal();}
+function rmTrainDay(tid){var days=getTD();var t=new Date().toISOString().split('T')[0];if(!days[t]){renderCal();return;}if(tid){var i=days[t].indexOf(tid);if(i>-1)days[t].splice(i,1);}if(days[t].length===0)delete days[t];S.set('trained_days',days);renderCal();}
 window.calNav=function(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();};
-window.toggleCalDay=function(ds){var days=getTD();var i=days.indexOf(ds);if(i>-1)days.splice(i,1);else days.push(ds);S.set('trained_days',days);renderCal();jbPush();};
+window.toggleCalDay=function(ds){
+  var days=getTD();
+  if(days.hasOwnProperty(ds)){showCalDayModal(ds);}
+  else{days[ds]=[];S.set('trained_days',days);renderCal();jbPush();}
+};
+var _cdmDate=null;
+function showCalDayModal(ds){
+  _cdmDate=ds;
+  var days=getTD();
+  var tids=days[ds]||[];
+  var parts=ds.split('-');
+  var dt=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]),12);
+  document.getElementById('cdm-date').textContent=dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  var html='';
+  if(tids.length===0){html='<div style="color:var(--text2);font-size:13px;padding:4px 0;">Dia marcado manualmente</div>';}
+  else{tids.forEach(function(tid){var lbl=tidToLabel(tid);var nm=tidToName(tid);html+='<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);"><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);min-width:26px;">'+lbl+'</span><span style="font-size:13px;color:var(--text);">'+nm+'</span></div>';});}
+  document.getElementById('cdm-list').innerHTML=html;
+  document.getElementById('cal-day-modal').style.display='flex';
+}
+function calDayRemove(){
+  if(!_cdmDate)return;
+  var days=getTD();
+  delete days[_cdmDate];
+  S.set('trained_days',days);
+  renderCal();jbPush();
+  document.getElementById('cal-day-modal').style.display='none';
+}
 function renderCal(){
   var trained=getTD();
   var todayStr=new Date().toISOString().split('T')[0];
@@ -1977,14 +2021,17 @@ function renderCal(){
     var ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
     var cls='cal-day';
     if(ds===todayStr)cls+=' today';
-    if(trained.includes(ds))cls+=' trained';
-    html+='<div class="'+cls+'" onclick="toggleCalDay(\''+ds+'\')">'+day+'</div>';
+    var isTrained=trained.hasOwnProperty(ds);
+    if(isTrained)cls+=' trained';
+    var tidLabels='';
+    if(isTrained){var tids=trained[ds]||[];if(tids.length>0){var lbls=tids.slice(0,2).map(tidToLabel);if(tids.length>2)lbls[1]='…';tidLabels='<span class="cal-day-tid">'+lbls.join(' ')+'</span>';}}
+    html+='<div class="'+cls+'" onclick="toggleCalDay(\''+ds+'\')">'+day+tidLabels+'</div>';
   }
   var rem=(7-((first+last)%7))%7;
   for(var i=1;i<=rem;i++)html+='<div class="cal-day other-month">'+i+'</div>';
   grid.innerHTML=html;
   var streak=0;var chk=new Date();
-  while(streak<365){var s=chk.toISOString().split('T')[0];if(trained.includes(s)){streak++;chk.setDate(chk.getDate()-1);}else break;}
+  while(streak<365){var s=chk.toISOString().split('T')[0];if(trained.hasOwnProperty(s)){streak++;chk.setDate(chk.getDate()-1);}else break;}
   var cs=document.getElementById('cal-streak');if(cs)cs.textContent=streak;
 }
 
@@ -2117,7 +2164,7 @@ function jbCollect(){
   }
   var ltd=localStorage.getItem('last_done_tid');if(ltd)d.last_done_tid=ltd;
   d.done_ids=S.get('done_ids')||[];
-  d.trained_days=S.get('trained_days')||[];
+  d.trained_days=getTD();
   d.weights=S.get('weights')||[];
   return d;
 }
@@ -2384,17 +2431,15 @@ window.toggleSyncPanel=function(){
 
 // STREAK
 function calcStreak(){
-  var days=S.get('trained_days')||[];
-  if(!days.length)return 0;
-  days=days.slice().sort().reverse();
+  var days=getTD();
   var today=new Date().toISOString().split('T')[0];
   var yesterday=new Date(Date.now()-86400000).toISOString().split('T')[0];
-  if(!days.includes(today)&&!days.includes(yesterday))return 0;
+  if(!days.hasOwnProperty(today)&&!days.hasOwnProperty(yesterday))return 0;
   var streak=0;
-  var d=new Date(days.includes(today)?today:yesterday);
+  var d=new Date((days.hasOwnProperty(today)?today:yesterday)+'T12:00:00');
   while(true){
     var ds=d.toISOString().split('T')[0];
-    if(days.includes(ds)){streak++;d=new Date(d.getTime()-86400000);}
+    if(days.hasOwnProperty(ds)){streak++;d=new Date(d.getTime()-86400000);}
     else break;
   }
   return streak;
