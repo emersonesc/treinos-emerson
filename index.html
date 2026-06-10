@@ -2477,13 +2477,16 @@ jbUpdateCodeUI();
 (async function(){
   await jbPull();
   // Seed histórico: roda depois do pull para não ser sobrescrito pela nuvem
-  if(!localStorage.getItem('cal_seed_v3')){localStorage.removeItem('cal_seed_v2');
+  if(!localStorage.getItem('cal_seed_v4')){localStorage.removeItem('cal_seed_v2');localStorage.removeItem('cal_seed_v3');
     var _sd=getTD();
     var changed=false;
     if(!_sd['2026-06-08']||!_sd['2026-06-08'].length){_sd['2026-06-08']=['m1-t2'];changed=true;}
     if(!_sd['2026-06-09']||!_sd['2026-06-09'].length){_sd['2026-06-09']=['m1-t3'];changed=true;}
     if(changed){S.set('trained_days',_sd);renderCal();}
-    localStorage.setItem('cal_seed_v3','1');
+    var _dids=S.get('done_ids')||[];
+    ['m1-t2','m1-t3'].forEach(function(tid){if(!_dids.includes(tid)){_dids.push(tid);changed=true;}});
+    if(changed){S.set('done_ids',_dids);if(!localStorage.getItem('last_done_tid'))localStorage.setItem('last_done_tid','m1-t3');restoreDoneCards();updCount();updateNextBanner();updateStreak();}
+    localStorage.setItem('cal_seed_v4','1');
     await jbPush();
   }
   if(!jblobId)await jbPush();
