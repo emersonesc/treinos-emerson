@@ -2080,9 +2080,9 @@ var JB_KEY='$2a$10$c4AOc1dzybK4RLd7Gu3AfORD0QLCrDGEqvEKfKqXZHDYFCD0rC8Eu';
 var JB_BIN='6a27a442f5f4af5e29cfa675';
 // conectar aparelhos via ?bid= na URL
 (function(){var p=new URLSearchParams(location.search);var bid=p.get('bid');if(bid){localStorage.setItem('treinos_jbin_id',bid);history.replaceState(null,'',location.pathname);}})();
-// sempre usa o bin fixo se não tiver outro salvo
-if(!localStorage.getItem('treinos_jbin_id'))localStorage.setItem('treinos_jbin_id',JB_BIN);
-var jblobId=localStorage.getItem('treinos_jbin_id')||JB_BIN;
+// sempre usa o bin fixo — sobrescreve qualquer valor antigo
+localStorage.setItem('treinos_jbin_id',JB_BIN);
+var jblobId=JB_BIN;
 var jbTimer=null;
 
 function jbSetUI(s,msg){
@@ -2212,7 +2212,7 @@ async function jbPull(){
   jbSetUI('syncing','Buscando dados...');
   try{
     var r=await fetch(JBIN+'/b/'+jblobId+'/latest',{headers:{'X-Master-Key':JB_KEY}});
-    if(r.status===404){jblobId='';localStorage.removeItem('treinos_jbin_id');await jbPush();return;}
+    if(r.status===404){jblobId=JB_BIN;localStorage.setItem('treinos_jbin_id',JB_BIN);await jbPush();return;}
     if(!r.ok){var eb=await r.text().catch(function(){return '';});throw new Error(r.status+' '+eb.slice(0,80));}
     var j=await r.json();
     var cloudData=j.record;
