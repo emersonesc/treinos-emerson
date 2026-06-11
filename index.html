@@ -1679,6 +1679,7 @@ var S={
   get:function(k){try{var v=localStorage.getItem('mfit_'+k);return v?JSON.parse(v):_store[k]||null;}catch(e){return _store[k]||null;}},
   set:function(k,v){try{localStorage.setItem('mfit_'+k,JSON.stringify(v));}catch(e){}_store[k]=v;}
 };
+function localDate(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 
 // SECTION NAV - override head stub with full version
 window.showSection=function(id){
@@ -1771,7 +1772,7 @@ window.toggleT=function(h){
           }
           S.set(key,newVal);
           if(newNum>0){
-            var today=new Date().toISOString().split('T')[0];
+            var today=localDate();
             var histK='exhist_'+tid+'_'+idx;
             var hist=S.get(histK)||[];
             hist=hist.filter(function(h){return h.d!==today;});
@@ -1972,8 +1973,8 @@ function getTD(){
 }
 function tidToLabel(tid){var m=tid.match(/t(\d+)$/i);return m?'T'+m[1]:tid.toUpperCase();}
 function tidToName(tid){var c=document.querySelector('[data-tid="'+tid+'"]');return c?c.querySelector('.t-name').textContent:'';}
-function addTrainDay(tid){var days=getTD();var t=new Date().toISOString().split('T')[0];if(!days[t])days[t]=[];if(tid&&!days[t].includes(tid))days[t].push(tid);S.set('trained_days',days);renderCal();}
-function rmTrainDay(tid){var days=getTD();var t=new Date().toISOString().split('T')[0];if(!days[t]){renderCal();return;}if(tid){var i=days[t].indexOf(tid);if(i>-1)days[t].splice(i,1);}if(days[t].length===0)delete days[t];S.set('trained_days',days);renderCal();}
+function addTrainDay(tid){var days=getTD();var t=localDate();if(!days[t])days[t]=[];if(tid&&!days[t].includes(tid))days[t].push(tid);S.set('trained_days',days);renderCal();}
+function rmTrainDay(tid){var days=getTD();var t=localDate();if(!days[t]){renderCal();return;}if(tid){var i=days[t].indexOf(tid);if(i>-1)days[t].splice(i,1);}if(days[t].length===0)delete days[t];S.set('trained_days',days);renderCal();}
 window.calNav=function(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();};
 window.toggleCalDay=function(ds){
   var days=getTD();
@@ -2004,7 +2005,7 @@ function calDayRemove(){
 }
 function renderCal(){
   var trained=getTD();
-  var todayStr=new Date().toISOString().split('T')[0];
+  var todayStr=localDate();
   var grid=document.getElementById('cal-grid');
   if(!grid)return;
   var months=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -2031,7 +2032,7 @@ function renderCal(){
   for(var i=1;i<=rem;i++)html+='<div class="cal-day other-month">'+i+'</div>';
   grid.innerHTML=html;
   var streak=0;var chk=new Date();
-  while(streak<365){var s=chk.toISOString().split('T')[0];if(trained.hasOwnProperty(s)){streak++;chk.setDate(chk.getDate()-1);}else break;}
+  while(streak<365){var s=localDate(chk);if(trained.hasOwnProperty(s)){streak++;chk.setDate(chk.getDate()-1);}else break;}
   var cs=document.getElementById('cal-streak');if(cs)cs.textContent=streak;
 }
 
@@ -2042,7 +2043,7 @@ window.addWeight=function(){
   var val=parseFloat(inp.value.replace(',','.'));
   if(!val||val<40||val>300){inp.style.borderColor='var(--orange)';setTimeout(function(){inp.style.borderColor='';},1000);return;}
   var wts=getWts();
-  wts.unshift({date:new Date().toISOString().split('T')[0],val:val});
+  wts.unshift({date:localDate(),val:val});
   if(wts.length>60)wts.length=60;
   S.set('weights',wts);inp.value='';renderWeights();jbSchedule();
 };
@@ -2432,13 +2433,13 @@ window.toggleSyncPanel=function(){
 // STREAK
 function calcStreak(){
   var days=getTD();
-  var today=new Date().toISOString().split('T')[0];
-  var yesterday=new Date(Date.now()-86400000).toISOString().split('T')[0];
+  var today=localDate();
+  var yesterday=localDate(new Date(Date.now()-86400000));
   if(!days.hasOwnProperty(today)&&!days.hasOwnProperty(yesterday))return 0;
   var streak=0;
   var d=new Date((days.hasOwnProperty(today)?today:yesterday)+'T12:00:00');
   while(true){
-    var ds=d.toISOString().split('T')[0];
+    var ds=localDate(d);
     if(days.hasOwnProperty(ds)){streak++;d=new Date(d.getTime()-86400000);}
     else break;
   }
