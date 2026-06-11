@@ -247,6 +247,14 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
 .cal-day-tid{font-size:7px;font-weight:700;line-height:1;opacity:.9;letter-spacing:.5px;}
 .cal-streak{margin-top:12px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);}
 .cal-streak span{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--orange);}
+.wpm-group{margin-bottom:8px;}
+.wpm-group-lbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:8px 0 4px;}
+.wpm-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;background:var(--surface3);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:12px;font-family:var(--body);margin-bottom:4px;text-align:left;}
+.wpm-btn b{font-family:var(--mono);font-weight:700;color:var(--text3);min-width:26px;}
+.wpm-btn span{flex:1;color:var(--text2);}
+.wpm-btn.sel{border-color:var(--accent);background:var(--accent-dim);}
+.wpm-btn.sel b{color:var(--accent);}
+.wpm-btn.sel span{color:var(--text);}
 
 /* ── NOTAS POR TREINO ── */
 .notes-panel{border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:none;}
@@ -1270,6 +1278,26 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
   </div>
 </div>
 
+<div id="workout-picker-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:9000;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;max-width:340px;width:calc(100% - 32px);max-height:80vh;display:flex;flex-direction:column;">
+    <div style="font-family:var(--display);font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Registrar treino</div>
+    <div id="wpm-date" style="font-size:13px;color:var(--text);margin-bottom:14px;"></div>
+    <div id="wpm-list" style="overflow-y:auto;flex:1;margin-bottom:14px;"></div>
+    <div style="display:flex;gap:8px;flex-shrink:0;">
+      <button id="wpm-save" onclick="savePickedWorkouts()" style="flex:1;padding:11px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:13px;font-weight:700;font-family:var(--body);">Salvar</button>
+      <button onclick="document.getElementById('workout-picker-modal').style.display='none'" style="flex:1;padding:11px;background:var(--surface3);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;font-family:var(--body);">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="calendar-card fade-in" id="history-section">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <div class="cal-title">Histórico de Treinos</div>
+    <div id="history-count" style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;"></div>
+  </div>
+  <div id="history-list"></div>
+</div>
+
 <div class="weight-card fade-in">
   <div class="weight-header">
     <div class="weight-title">Progresso de Peso</div>
@@ -1979,7 +2007,7 @@ window.calNav=function(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}
 window.toggleCalDay=function(ds){
   var days=getTD();
   if(days.hasOwnProperty(ds)){showCalDayModal(ds);}
-  else{days[ds]=[];S.set('trained_days',days);renderCal();jbPush();}
+  else{showWorkoutPicker(ds);}
 };
 var _cdmDate=null;
 function showCalDayModal(ds){
@@ -2000,8 +2028,48 @@ function calDayRemove(){
   var days=getTD();
   delete days[_cdmDate];
   S.set('trained_days',days);
-  renderCal();jbPush();
+  renderCal();renderHistory();jbPush();
   document.getElementById('cal-day-modal').style.display='none';
+}
+function getAllWorkouts(){
+  var cards=document.querySelectorAll('.train-card[data-tid]');
+  var res=[];
+  cards.forEach(function(c){
+    var tid=c.dataset.tid;
+    var nm=c.querySelector('.t-name');
+    var mm=tid.match(/^m(\d+)/);
+    res.push({tid:tid,label:tidToLabel(tid),name:nm?nm.textContent:'',m:mm?parseInt(mm[1]):1});
+  });
+  return res;
+}
+var _wpmDate=null,_wpmSel=[];
+function showWorkoutPicker(ds){
+  _wpmDate=ds;_wpmSel=[];
+  var parts=ds.split('-');
+  var dt=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]),12);
+  document.getElementById('wpm-date').textContent=dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  var mNames=['','M1 · Adaptação','M2 · Progressão','M3 · Intensidade','M4 · Força'];
+  var wks=getAllWorkouts();var curM=0;var html='';
+  wks.forEach(function(w){
+    if(w.m!==curM){if(curM>0)html+='</div>';html+='<div class="wpm-group"><div class="wpm-group-lbl">'+(mNames[w.m]||'M'+w.m)+'</div>';curM=w.m;}
+    html+='<button class="wpm-btn" data-tid="'+w.tid+'" onclick="wpmToggle(this)"><b>'+w.label+'</b><span>'+w.name+'</span></button>';
+  });
+  if(curM>0)html+='</div>';
+  document.getElementById('wpm-list').innerHTML=html;
+  document.getElementById('workout-picker-modal').style.display='flex';
+}
+function wpmToggle(btn){
+  btn.classList.toggle('sel');
+  var tid=btn.dataset.tid;
+  var i=_wpmSel.indexOf(tid);
+  if(i>-1)_wpmSel.splice(i,1);else _wpmSel.push(tid);
+  document.getElementById('wpm-save').textContent=_wpmSel.length?'Salvar ('+_wpmSel.length+')':'Salvar';
+}
+function savePickedWorkouts(){
+  if(!_wpmDate){document.getElementById('workout-picker-modal').style.display='none';return;}
+  var days=getTD();
+  if(_wpmSel.length>0){days[_wpmDate]=_wpmSel;S.set('trained_days',days);renderCal();renderHistory();jbPush();}
+  document.getElementById('workout-picker-modal').style.display='none';
 }
 function renderCal(){
   var trained=getTD();
@@ -2034,6 +2102,30 @@ function renderCal(){
   var streak=0;var chk=new Date();
   while(streak<365){var s=localDate(chk);if(trained.hasOwnProperty(s)){streak++;chk.setDate(chk.getDate()-1);}else break;}
   var cs=document.getElementById('cal-streak');if(cs)cs.textContent=streak;
+}
+function renderHistory(){
+  var listEl=document.getElementById('history-list');
+  if(!listEl)return;
+  var days=getTD();
+  var keys=Object.keys(days).sort().reverse();
+  var countEl=document.getElementById('history-count');
+  if(countEl)countEl.textContent=keys.length+' TREINO'+(keys.length!==1?'S':'');
+  if(!keys.length){listEl.innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:16px 0;">Nenhum treino registrado ainda.</div>';return;}
+  var html='';
+  keys.slice(0,60).forEach(function(ds){
+    var tids=days[ds]||[];
+    var parts=ds.split('-');
+    var dt=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]),12);
+    var dateStr=dt.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}).replace('.','/').replace(/,?\s*/,'&nbsp;');
+    var woHtml='';
+    if(!tids.length){woHtml='<span style="color:var(--text3);font-size:12px;">Treino</span>';}
+    else{woHtml=tids.map(function(tid){return '<span style="color:var(--accent);font-family:var(--mono);font-size:12px;font-weight:700;">'+tidToLabel(tid)+'</span><span style="color:var(--text);font-size:12px;"> — '+tidToName(tid)+'</span>';}).join('<br>');}
+    html+='<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">'+
+      '<div style="font-family:var(--mono);font-size:10px;color:var(--text3);min-width:58px;padding-top:2px;">'+dateStr+'</div>'+
+      '<div style="flex:1;">'+woHtml+'</div>'+
+      '</div>';
+  });
+  listEl.innerHTML=html;
 }
 
 // PESO
@@ -2175,17 +2267,34 @@ function jbApply(d){
   if(!dTs)return false;
   var localTs=parseInt(localStorage.getItem('treinos_sync_ts')||'0');
   if(dTs<=localTs)return false;
+  // cargas e notes: cloud wins por chave
   if(d.cargas)Object.keys(d.cargas).forEach(function(k){localStorage.setItem(k,d.cargas[k]);});
   if(d.notes)Object.keys(d.notes).forEach(function(k){localStorage.setItem(k,d.notes[k]);});
   if(d.last_done_tid)localStorage.setItem('last_done_tid',d.last_done_tid);
-  if(d.done_ids)S.set('done_ids',d.done_ids);
-  if(d.trained_days)S.set('trained_days',d.trained_days);
-  if(d.weights)S.set('weights',d.weights);
+  // done_ids: união — nunca perde check marks
+  if(d.done_ids){var ld=S.get('done_ids')||[];d.done_ids.forEach(function(id){if(!ld.includes(id))ld.push(id);});S.set('done_ids',ld);}
+  // trained_days: união por data — nunca perde dias registrados
+  if(d.trained_days){
+    var ld2=getTD();
+    Object.keys(d.trained_days).forEach(function(date){
+      if(!ld2[date]){ld2[date]=d.trained_days[date]||[];}
+      else{var arr=ld2[date].slice();(d.trained_days[date]||[]).forEach(function(tid){if(!arr.includes(tid))arr.push(tid);});ld2[date]=arr;}
+    });
+    S.set('trained_days',ld2);
+  }
+  // weights: união com dedup por data+valor
+  if(d.weights){
+    var lw=S.get('weights')||[];
+    d.weights.forEach(function(w){if(!lw.find(function(x){return x.date===w.date&&x.val===w.val;}))lw.push(w);});
+    lw.sort(function(a,b){return a.date<b.date?1:-1;});
+    if(lw.length>60)lw.length=60;
+    S.set('weights',lw);
+  }
   localStorage.setItem('treinos_sync_ts',String(dTs));
   return true;
 }
 function jbRerender(){
-  restoreExStates();restoreDoneCards();updateNextBanner();renderCal();renderWeights();
+  restoreExStates();restoreDoneCards();updateNextBanner();renderCal();renderHistory();renderWeights();
   document.querySelectorAll('.train-card.open').forEach(function(c){
     var tid=c.dataset.tid;
     c.querySelectorAll('.carga-inp').forEach(function(inp,idx){
@@ -2466,6 +2575,7 @@ function showToast(msg,dur){
 // INIT
 updCount();
 renderCal();
+renderHistory();
 renderWeights();
 restoreExStates();
 restoreDoneCards();
