@@ -1278,6 +1278,16 @@ footer{text-align:center;margin-top:48px;color:var(--text3);font-family:var(--mo
   </div>
 </div>
 
+<div id="meso-complete-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9500;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid rgba(255,184,0,.25);border-radius:16px;padding:32px 24px;max-width:320px;width:calc(100% - 32px);text-align:center;">
+    <div style="font-size:52px;margin-bottom:14px;">🏆</div>
+    <div style="font-family:var(--display);font-size:19px;font-weight:700;color:var(--yellow);margin-bottom:10px;">Mesociclo Concluído!</div>
+    <div id="meso-complete-txt" style="font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6;"></div>
+    <button onclick="resetMesocycle()" style="width:100%;padding:14px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;font-family:var(--body);cursor:pointer;margin-bottom:10px;">Reiniciar M<span id="meso-complete-m"></span></button>
+    <button onclick="document.getElementById('meso-complete-modal').style.display='none'" style="width:100%;padding:11px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-family:var(--body);cursor:pointer;">Fechar</button>
+  </div>
+</div>
+
 <div id="workout-picker-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:9000;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;max-width:340px;width:calc(100% - 32px);max-height:80vh;display:flex;flex-direction:column;">
     <div style="font-family:var(--display);font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Registrar treino</div>
@@ -1974,6 +1984,7 @@ window.markDone=function(e,id){
   updCount();
   updateNextBanner();
   updateStreak();
+  if(done.has(id))checkMesocycleComplete(id);
   jbPush();
 };
 function updCount(){
@@ -2264,6 +2275,7 @@ function jbCollect(){
   d.done_ids=S.get('done_ids')||[];
   d.trained_days=getTD();
   d.weights=S.get('weights')||[];
+  d.meso_reset_ts=S.get('meso_reset_ts')||{};
   return d;
 }
 function jbApply(d){
@@ -2276,6 +2288,15 @@ function jbApply(d){
   if(d.cargas)Object.keys(d.cargas).forEach(function(k){localStorage.setItem(k,d.cargas[k]);});
   if(d.notes)Object.keys(d.notes).forEach(function(k){localStorage.setItem(k,d.notes[k]);});
   if(d.last_done_tid)localStorage.setItem('last_done_tid',d.last_done_tid);
+  // meso_reset_ts: propaga resets entre dispositivos
+  if(d.meso_reset_ts){
+    var localRts=S.get('meso_reset_ts')||{};
+    Object.keys(d.meso_reset_ts).forEach(function(m){
+      var crt=d.meso_reset_ts[m]||0,lrt=localRts[m]||0;
+      if(crt>lrt){var pfx=m+'-';var cur=S.get('done_ids')||[];S.set('done_ids',cur.filter(function(t){return!t.startsWith(pfx);}));done=new Set(S.get('done_ids')||[]);localRts[m]=crt;}
+    });
+    S.set('meso_reset_ts',localRts);
+  }
   // done_ids: união — nunca perde check marks
   if(d.done_ids){var ld=S.get('done_ids')||[];d.done_ids.forEach(function(id){if(!ld.includes(id))ld.push(id);});S.set('done_ids',ld);}
   // trained_days: união por data — nunca perde dias registrados
@@ -2567,6 +2588,30 @@ function updateStreak(){
   else if(s===1){el.textContent='💪 Treinando hoje';el.style.display='inline-flex';}
   else el.style.display='none';
 }
+
+// MESOCICLO COMPLETO
+function checkMesocycleComplete(id){
+  var prefix='m'+curM+'-';
+  if(!id.startsWith(prefix))return;
+  var tids=getAllTids().filter(function(t){var c=document.querySelector('[data-tid="'+t+'"]');return c&&!c.classList.contains('rest-day')&&t.startsWith(prefix);});
+  if(!tids.length||!tids.every(function(t){return done.has(t);}))return;
+  var mNames=['','Adaptação','Progressão','Intensidade','Força'];
+  document.getElementById('meso-complete-txt').textContent='Você concluiu todos os '+tids.length+' treinos do M'+curM+' — '+(mNames[curM]||'')+'. Incrível! Pronto para recomeçar?';
+  document.getElementById('meso-complete-m').textContent=curM;
+  setTimeout(function(){document.getElementById('meso-complete-modal').style.display='flex';},700);
+}
+window.resetMesocycle=function(){
+  var prefix='m'+curM+'-';
+  var allTids=getAllTids().filter(function(t){return t.startsWith(prefix);});
+  allTids.forEach(function(t){done.delete(t);var c=document.querySelector('[data-tid="'+t+'"]');if(c){c.classList.remove('completed');var b=c.querySelector('.check-btn');if(b)b.classList.remove('checked');}});
+  var dids=(S.get('done_ids')||[]).filter(function(t){return!t.startsWith(prefix);});
+  S.set('done_ids',dids);
+  var rts=S.get('meso_reset_ts')||{};rts['m'+curM]=Date.now();S.set('meso_reset_ts',rts);
+  updCount();updateNextBanner();updateStreak();
+  jbPush();
+  document.getElementById('meso-complete-modal').style.display='none';
+  showToast('M'+curM+' reiniciado! Bora de novo 💪',3000);
+};
 
 // TOAST
 function showToast(msg,dur){
