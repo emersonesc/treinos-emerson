@@ -1908,11 +1908,21 @@ function updateNextBanner(){
   if(!banner)return;
   var prefix='m'+curM+'-';
   var tids=getAllTids().filter(function(t){var c=document.querySelector('[data-tid="'+t+'"]');return c&&!c.classList.contains('rest-day')&&t.startsWith(prefix);});
-  // Primeiro treino não feito do mesociclo atual
+  // Acha o último treino feito na sequência
+  var lastDoneIdx=-1;
+  for(var i=tids.length-1;i>=0;i--){if(done.has(tids[i])){lastDoneIdx=i;break;}}
   var nextTid=null;
-  for(var i=0;i<tids.length;i++){if(!done.has(tids[i])){nextTid=tids[i];break;}}
-  // Se todos feitos, volta pro primeiro (novo ciclo)
-  if(!nextTid)nextTid=tids[0];
+  if(lastDoneIdx===-1){
+    // Nada feito ainda: mostra o primeiro
+    nextTid=tids[0];
+  } else {
+    // Próximo não feito após o último feito
+    for(var i=lastDoneIdx+1;i<tids.length;i++){if(!done.has(tids[i])){nextTid=tids[i];break;}}
+    // Se todos após estão feitos, busca desde o início (wrap)
+    if(!nextTid){for(var i=0;i<tids.length;i++){if(!done.has(tids[i])){nextTid=tids[i];break;}}}
+    // Se tudo feito: reinicia do T1
+    if(!nextTid)nextTid=tids[0];
+  }
   if(!nextTid){banner.style.display='none';return;}
   var meta=getCardMeta(nextTid);
   if(!meta){banner.style.display='none';return;}
