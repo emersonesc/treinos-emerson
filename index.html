@@ -2778,20 +2778,21 @@ jbUpdateCodeUI();
 (async function(){
   await jbPull();
   // Seed histórico: roda depois do pull para não ser sobrescrito pela nuvem
-  if(!localStorage.getItem('cal_seed_v6')){localStorage.removeItem('cal_seed_v2');localStorage.removeItem('cal_seed_v3');localStorage.removeItem('cal_seed_v4');localStorage.removeItem('cal_seed_v5');
+  if(!localStorage.getItem('cal_seed_v7')){localStorage.removeItem('cal_seed_v2');localStorage.removeItem('cal_seed_v3');localStorage.removeItem('cal_seed_v4');localStorage.removeItem('cal_seed_v5');localStorage.removeItem('cal_seed_v6');
     var _sd=getTD();
     _sd['2026-06-08']=['m1-t3'];
     _sd['2026-06-09']=['m1-t4'];
     _sd['2026-06-10']=['m1-t5'];
+    _sd['2026-06-11']=['m1-t6'];
     S.set('trained_days',_sd);renderCal();renderHistory();
     var _dids=S.get('done_ids')||[];
-    var _seedTids=['m1-t3','m1-t4','m1-t5'];
-    _dids=_dids.filter(function(t){return!['m1-t2','m1-t3','m1-t4','m1-t5'].includes(t);});
+    var _seedTids=['m1-t3','m1-t4','m1-t5','m1-t6'];
+    _dids=_dids.filter(function(t){return!['m1-t2','m1-t3','m1-t4','m1-t5','m1-t6'].includes(t);});
     _seedTids.forEach(function(tid){if(!_dids.includes(tid))_dids.push(tid);});
     S.set('done_ids',_dids);
     done=new Set(_dids);
     restoreDoneCards();updCount();updateNextBanner();updateStreak();
-    localStorage.setItem('cal_seed_v6','1');
+    localStorage.setItem('cal_seed_v7','1');
     await jbPush();
   }
   if(!jblobId)await jbPush();
