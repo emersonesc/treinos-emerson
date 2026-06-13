@@ -2022,8 +2022,9 @@ function updateNextBanner(){
   for(var i=tids.length-1;i>=0;i--){if(done.has(tids[i])){lastDoneIdx=i;break;}}
   var nextTid=null;
   if(lastDoneIdx===-1){
-    // Nada feito ainda: mostra o primeiro
-    nextTid=tids[0];
+    // Nada feito ainda: usa cycle_start_tid se existir, senão primeiro
+    var cs=S.get('cycle_start_tid');
+    nextTid=(cs&&tids.includes(cs))?cs:tids[0];
   } else {
     // Próximo não feito após o último feito
     for(var i=lastDoneIdx+1;i<tids.length;i++){if(!done.has(tids[i])){nextTid=tids[i];break;}}
@@ -2413,6 +2414,7 @@ function jbCollect(){
   d.weights=S.get('weights')||[];
   d.meso_reset_ts=S.get('meso_reset_ts')||{};
   d.weekly_goal=getWeekGoal();
+  d.cycle_start_tid=S.get('cycle_start_tid')||null;
   return d;
 }
 function jbApply(d){
@@ -2454,6 +2456,7 @@ function jbApply(d){
     S.set('weights',lw);
   }
   if(d.weekly_goal)S.set('weekly_goal',d.weekly_goal);
+  if(d.cycle_start_tid)S.set('cycle_start_tid',d.cycle_start_tid);
   localStorage.setItem('treinos_sync_ts',String(dTs));
   return true;
 }
@@ -2731,12 +2734,15 @@ function updateStreak(){
 function checkMesocycleComplete(id){
   var prefix='m'+curM+'-';
   if(!id.startsWith(prefix))return;
-  var tids=getAllTids().filter(function(t){var c=document.querySelector('[data-tid="'+t+'"]');return c&&!c.classList.contains('rest-day')&&t.startsWith(prefix);});
-  if(!tids.length)return;
-  var lastTid=tids[tids.length-1];
-  if(id!==lastTid||!done.has(lastTid))return;
+  var pfxTids=getAllTids().filter(function(t){var c=document.querySelector('[data-tid="'+t+'"]');return c&&!c.classList.contains('rest-day')&&t.startsWith(prefix);});
+  if(!pfxTids.length)return;
+  var doneInMeso=[...done].filter(function(t){return t.startsWith(prefix);});
+  if(doneInMeso.length<pfxTids.length)return;
+  // Salva de onde começa o próximo ciclo (treino seguinte na sequência)
+  var idx=pfxTids.indexOf(id);
+  S.set('cycle_start_tid',pfxTids[(idx+1)%pfxTids.length]);
   var mNames=['','Adaptação','Progressão','Intensidade','Força'];
-  document.getElementById('meso-complete-txt').textContent='Você concluiu o T6 do M'+curM+' — '+(mNames[curM]||'')+'. Incrível! Ciclo completo, pronto para recomeçar?';
+  document.getElementById('meso-complete-txt').textContent='Você concluiu todos os treinos do M'+curM+' — '+(mNames[curM]||'')+'. Incrível! Pronto para recomeçar?';
   document.getElementById('meso-complete-m').textContent=curM;
   setTimeout(function(){document.getElementById('meso-complete-modal').style.display='flex';},700);
 }
@@ -2780,7 +2786,7 @@ jbUpdateCodeUI();
 (async function(){
   await jbPull();
   // Seed histórico: roda depois do pull para não ser sobrescrito pela nuvem
-  if(!localStorage.getItem('cal_seed_v9')){localStorage.removeItem('cal_seed_v2');localStorage.removeItem('cal_seed_v3');localStorage.removeItem('cal_seed_v4');localStorage.removeItem('cal_seed_v5');localStorage.removeItem('cal_seed_v6');localStorage.removeItem('cal_seed_v7');localStorage.removeItem('cal_seed_v8');
+  if(!localStorage.getItem('cal_seed_v10')){localStorage.removeItem('cal_seed_v2');localStorage.removeItem('cal_seed_v3');localStorage.removeItem('cal_seed_v4');localStorage.removeItem('cal_seed_v5');localStorage.removeItem('cal_seed_v6');localStorage.removeItem('cal_seed_v7');localStorage.removeItem('cal_seed_v8');localStorage.removeItem('cal_seed_v9');
     // Registra histórico no calendário
     var _sd=getTD();
     _sd['2026-06-08']=['m1-t3'];
@@ -2789,14 +2795,14 @@ jbUpdateCodeUI();
     _sd['2026-06-11']=['m1-t6'];
     _sd['2026-06-13']=['m1-t2'];
     S.set('trained_days',_sd);
-    // Ciclo anterior concluído com T6 → novo ciclo: só T2 feito até agora
+    // Ciclo concluído com T2 → reseta checkmarks, próximo ciclo começa no T3
     var _dids=(S.get('done_ids')||[]).filter(function(t){return!t.startsWith('m1-');});
-    if(!_dids.includes('m1-t2'))_dids.push('m1-t2');
     S.set('done_ids',_dids);
-    var _rts=S.get('meso_reset_ts')||{};if(!_rts['m1'])_rts['m1']=Date.now()-1000;S.set('meso_reset_ts',_rts);
+    S.set('cycle_start_tid','m1-t3');
+    var _rts=S.get('meso_reset_ts')||{};_rts['m1']=Date.now();S.set('meso_reset_ts',_rts);
     done=new Set(_dids);
     restoreDoneCards();updCount();updateNextBanner();updateStreak();renderCal();renderHistory();
-    localStorage.setItem('cal_seed_v9','1');
+    localStorage.setItem('cal_seed_v10','1');
     await jbPush();
   }
   if(!jblobId)await jbPush();
