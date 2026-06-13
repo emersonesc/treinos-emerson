@@ -2780,21 +2780,23 @@ jbUpdateCodeUI();
 (async function(){
   await jbPull();
   // Seed histórico: roda depois do pull para não ser sobrescrito pela nuvem
-  if(!localStorage.getItem('cal_seed_v8')){localStorage.removeItem('cal_seed_v2');localStorage.removeItem('cal_seed_v3');localStorage.removeItem('cal_seed_v4');localStorage.removeItem('cal_seed_v5');localStorage.removeItem('cal_seed_v6');localStorage.removeItem('cal_seed_v7');
+  if(!localStorage.getItem('cal_seed_v9')){localStorage.removeItem('cal_seed_v2');localStorage.removeItem('cal_seed_v3');localStorage.removeItem('cal_seed_v4');localStorage.removeItem('cal_seed_v5');localStorage.removeItem('cal_seed_v6');localStorage.removeItem('cal_seed_v7');localStorage.removeItem('cal_seed_v8');
     // Registra histórico no calendário
     var _sd=getTD();
     _sd['2026-06-08']=['m1-t3'];
     _sd['2026-06-09']=['m1-t4'];
     _sd['2026-06-10']=['m1-t5'];
     _sd['2026-06-11']=['m1-t6'];
+    _sd['2026-06-13']=['m1-t2'];
     S.set('trained_days',_sd);
-    // T6 foi o último do ciclo → reseta checkmarks do M1 para começar novo ciclo limpo
+    // Ciclo anterior concluído com T6 → novo ciclo: só T2 feito até agora
     var _dids=(S.get('done_ids')||[]).filter(function(t){return!t.startsWith('m1-');});
+    if(!_dids.includes('m1-t2'))_dids.push('m1-t2');
     S.set('done_ids',_dids);
-    var _rts=S.get('meso_reset_ts')||{};_rts['m1']=Date.now();S.set('meso_reset_ts',_rts);
+    var _rts=S.get('meso_reset_ts')||{};if(!_rts['m1'])_rts['m1']=Date.now()-1000;S.set('meso_reset_ts',_rts);
     done=new Set(_dids);
     restoreDoneCards();updCount();updateNextBanner();updateStreak();renderCal();renderHistory();
-    localStorage.setItem('cal_seed_v8','1');
+    localStorage.setItem('cal_seed_v9','1');
     await jbPush();
   }
   if(!jblobId)await jbPush();
