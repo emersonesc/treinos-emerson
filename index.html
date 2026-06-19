@@ -2026,11 +2026,8 @@ function updateNextBanner(){
     var cs=S.get('cycle_start_tid');
     nextTid=(cs&&tids.includes(cs))?cs:tids[0];
   } else {
-    // Próximo não feito após o último feito
-    for(var i=lastDoneIdx+1;i<tids.length;i++){if(!done.has(tids[i])){nextTid=tids[i];break;}}
-    // Se todos após estão feitos, busca desde o início (wrap)
-    if(!nextTid){for(var i=0;i<tids.length;i++){if(!done.has(tids[i])){nextTid=tids[i];break;}}}
-    // Se tudo feito: reinicia do T1
+    // Primeiro não feito na sequência (T1 se T2 feito, T3 se T1+T2 feitos, etc.)
+    for(var i=0;i<tids.length;i++){if(!done.has(tids[i])){nextTid=tids[i];break;}}
     if(!nextTid)nextTid=tids[0];
   }
   if(!nextTid){banner.style.display='none';return;}
@@ -2786,23 +2783,21 @@ jbUpdateCodeUI();
 (async function(){
   await jbPull();
   // Seed histórico: roda depois do pull para não ser sobrescrito pela nuvem
-  if(!localStorage.getItem('cal_seed_v10')){localStorage.removeItem('cal_seed_v2');localStorage.removeItem('cal_seed_v3');localStorage.removeItem('cal_seed_v4');localStorage.removeItem('cal_seed_v5');localStorage.removeItem('cal_seed_v6');localStorage.removeItem('cal_seed_v7');localStorage.removeItem('cal_seed_v8');localStorage.removeItem('cal_seed_v9');
-    // Registra histórico no calendário
+  if(!localStorage.getItem('cal_seed_v11')){localStorage.removeItem('cal_seed_v2');localStorage.removeItem('cal_seed_v3');localStorage.removeItem('cal_seed_v4');localStorage.removeItem('cal_seed_v5');localStorage.removeItem('cal_seed_v6');localStorage.removeItem('cal_seed_v7');localStorage.removeItem('cal_seed_v8');localStorage.removeItem('cal_seed_v9');localStorage.removeItem('cal_seed_v10');
+    // Histórico no calendário
     var _sd=getTD();
-    _sd['2026-06-08']=['m1-t3'];
-    _sd['2026-06-09']=['m1-t4'];
-    _sd['2026-06-10']=['m1-t5'];
-    _sd['2026-06-11']=['m1-t6'];
-    _sd['2026-06-13']=['m1-t2'];
+    _sd['2026-06-08']=['m1-t3'];_sd['2026-06-09']=['m1-t4'];_sd['2026-06-10']=['m1-t5'];
+    _sd['2026-06-11']=['m1-t6'];_sd['2026-06-13']=['m1-t2'];
     S.set('trained_days',_sd);
-    // Ciclo concluído com T2 → reseta checkmarks, próximo ciclo começa no T3
+    // Novo ciclo em andamento: T2 feito, T1 a fazer hoje
     var _dids=(S.get('done_ids')||[]).filter(function(t){return!t.startsWith('m1-');});
+    if(!_dids.includes('m1-t2'))_dids.push('m1-t2');
     S.set('done_ids',_dids);
     S.set('cycle_start_tid','m1-t3');
-    var _rts=S.get('meso_reset_ts')||{};_rts['m1']=Date.now();S.set('meso_reset_ts',_rts);
+    var _rts=S.get('meso_reset_ts')||{};if(!_rts['m1'])_rts['m1']=1;S.set('meso_reset_ts',_rts);
     done=new Set(_dids);
     restoreDoneCards();updCount();updateNextBanner();updateStreak();renderCal();renderHistory();
-    localStorage.setItem('cal_seed_v10','1');
+    localStorage.setItem('cal_seed_v11','1');
     await jbPush();
   }
   if(!jblobId)await jbPush();
